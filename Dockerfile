@@ -13,9 +13,11 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# ── System deps (slim image omits gcc; needed for some C-extension wheels) ───
+# ── System deps (added headers for C-extensions like evdev) ─────────────────
 RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc \
+        build-essential \
+        linux-headers-generic \
         libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -23,8 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # ── Install Python dependencies ───────────────────────────────────────────────
-# Copy requirements first to leverage Docker layer cache:
-# layer is only rebuilt when requirements.txt changes.
 COPY requirements.txt ./
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
@@ -33,5 +33,4 @@ RUN pip install --no-cache-dir --upgrade pip \
 COPY . .
 
 # ── Cloud Run injects $PORT at runtime (default 8080) ────────────────────────
-# Using shell form so ${PORT:-8080} is evaluated by the shell at startup.
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8080}"]
