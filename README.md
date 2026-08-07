@@ -124,9 +124,3 @@ These surfaced during a code review pass and are worth addressing before a publi
 **Vision:** MediaPipe, OpenCV
 **AI:** Google Gemini (roast/report generation), ElevenLabs (voice cloning), gTTS (fallback TTS)
 **Process control:** psutil, pynput
-
----
-
-## License
-
-Add your license here (e.g. MIT, proprietary).

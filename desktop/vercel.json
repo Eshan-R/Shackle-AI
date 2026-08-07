@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://YOUR-GCP-BACKEND-URL.a.run.app/api/:path*"
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/api/:path*"
     },
     {
       "source": "/v1/:path*",
-      "destination": "https://YOUR-GCP-BACKEND-URL.a.run.app/v1/:path*"
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
     },
     {
       "source": "/(.*)",
