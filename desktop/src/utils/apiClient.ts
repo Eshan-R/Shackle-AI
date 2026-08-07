@@ -5,7 +5,7 @@
  *
  * URL resolution strategy (in priority order):
  *   1. VITE_BACKEND_API_URL env var   — explicit override (staging, custom domain)
- *   2. import.meta.env.DEV == true    — local dev server at http://127.0.0.1:8000
+ *   2. import.meta.env.DEV == true    — local dev server at http://0.0.0.0:8080
  *   3. Production without explicit var — empty string, relies on Vercel proxy rewrites
  *
  * Auth strategy:
@@ -34,9 +34,9 @@ export function getBaseUrl(): string {
     return explicitUrl.replace(/\/$/, ''); // strip trailing slash
   }
 
-  // Local dev — FastAPI runs on 8000 by default
+  // Local dev — FastAPI runs on 8080 by default
   if (import.meta.env.DEV) {
-    return 'http://127.0.0.1:8000';
+    return 'http://0.0.0.0:8080';
   }
 
   // Production without an explicit URL → empty string so Vercel rewrites

@@ -91,7 +91,7 @@ app.add_middleware(
         # ── Local development ──────────────────────────────────────────────
         "http://localhost:3000",        # CRA / Next.js dev server
         "http://localhost:5173",        # Vite dev server
-        "http://127.0.0.1:8000",        # FastAPI itself (loopback OAuth flow)
+        "http://0.0.0.0:8080",        # FastAPI itself (loopback OAuth flow)
         # ── Vercel production ──────────────────────────────────────────────
         "https://shackle-ai.vercel.app",
     ],
@@ -114,7 +114,7 @@ oauth_handshake_loop: asyncio.AbstractEventLoop | None = None
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com")
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "YOUR_GOOGLE_CLIENT_SECRET")
-LOOPBACK_REDIRECT_URI = os.environ.get("LOOPBACK_REDIRECT_URI", "http://127.0.0.1:8000/v1/auth/callback")
+LOOPBACK_REDIRECT_URI = os.environ.get("LOOPBACK_REDIRECT_URI", "http://0.0.0.0:8080/v1/auth/callback")
 
 # =====================================================================
 # DATA VALIDATION SCHEMAS

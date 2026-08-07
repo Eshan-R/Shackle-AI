@@ -79,7 +79,7 @@ Shackle AI is a desktop focus-enforcement app that combines webcam-based attenti
 ```bash
 cd backend
 pip install -r requirements.txt   # fastapi, uvicorn, firebase-admin, gtts, elevenlabs, razorpay, httpx, python-dotenv, pydantic
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --port 8080
 ```
 
 ### Desktop app setup
@@ -94,7 +94,7 @@ python app.py    # pywebview shell + daemon
 | Variable | Purpose |
 |---|---|
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth desktop loopback flow |
-| `LOOPBACK_REDIRECT_URI` | OAuth callback URI (defaults to `http://127.0.0.1:8000/v1/auth/callback`) |
+| `LOOPBACK_REDIRECT_URI` | OAuth callback URI (defaults to `http://0.0.0.0:8080/v1/auth/callback`) |
 | `ELEVENLABS_API_KEY` | Premium voice-cloned roast synthesis |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Billing/checkout |
 | `RAZORPAY_WEBHOOK_SECRET` | Verifies incoming Razorpay webhook signatures |

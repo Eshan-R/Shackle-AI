@@ -93,8 +93,8 @@ def start_backend_server():
 
         config = uvicorn.Config(
             app,
-            host="127.0.0.1",
-            port=8000,
+            host="0.0.0.0",
+            port=8080,
             log_level="warning",
             access_log=False
         )
@@ -112,7 +112,7 @@ def start_backend_server():
         backend_thread = threading.Thread(target=run_server, daemon=True)
         backend_thread.start()
 
-        print("[SYSTEM] Backend server thread initialized on http://127.0.0.1:8000")
+        print("[SYSTEM] Backend server thread initialized on http://0.0.0.0:8080")
     except Exception as e:
         print(f"[ERROR] Failed to start backend server: {e}")
 
@@ -132,7 +132,7 @@ def cleanup():
         daemon_instance.shutdown()
 
 
-def wait_for_backend(url: str = "http://127.0.0.1:8000/api/health", retries: int = 20, delay: float = 0.3):
+def wait_for_backend(url: str = "http://0.0.0.0:8080/api/health", retries: int = 20, delay: float = 0.3):
     """Polls backend health check endpoint until ready or timeout."""
     for i in range(retries):
         try:
@@ -163,7 +163,7 @@ def main():
     user_id = "local_developer"
     # session_id is intentionally left empty — it will only be set by the backend
     # /v1/session/start after the user authenticates via Firebase.
-    backend_api = "http://127.0.0.1:8000"
+    backend_api = "http://0.0.0.0:8080"
 
     print("[SYSTEM] Pre-booting biometric and system processing engines...")
     shutdown_event.clear()
@@ -182,7 +182,7 @@ def main():
     daemon_thread.start()
 
     # 5. Spin up the window framework layers
-    ui_url = "http://127.0.0.1:8000"
+    ui_url = "http://0.0.0.0:8080"
     print("[SYSTEM] Initializing edge desktop window wrapper layers...")
     window = webview.create_window(
         title='Shackle AI',
