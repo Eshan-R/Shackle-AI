@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shackle AI — Refund Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root, html[data-theme="light"] {
+    --ink: #f2ede1;
+    --surface: #e9e2cf;
+    --rule: #d9d0b8;
+    --accent: #b8791f;
+    --accent-dim: rgba(184,121,31,0.10);
+    --text: #23211b;
+    --text-2: #55503f;
+    --muted: #8a8371;
+    --ghost: rgba(0,0,0,0.05);
+  }
+  html[data-theme="dark"] {
+    --ink: #0b0d10;
+    --surface: #14171b;
+    --rule: #262a2f;
+    --accent: #e8a83d;
+    --accent-dim: rgba(232,168,61,0.12);
+    --text: #d7dade;
+    --text-2: #aeb2b8;
+    --muted: #6b7178;
+    --ghost: rgba(255,255,255,0.045);
+  }
+  html, body { background: var(--ink); }
+  body {
+    color: var(--text-2);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    transition: background 0.2s, color 0.2s;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .frame { display: flex; min-height: 100vh; }
+
+  .rail {
+    width: 232px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--rule);
+    padding: 32px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .rail-mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .rail-tabs { display: flex; flex-direction: column; gap: 2px; }
+  .tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 10px 10px;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+  }
+  .tab.is-active {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-left: 2px solid var(--accent);
+  }
+  .stamp {
+    align-self: flex-start;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-align: center;
+    padding: 10px 14px;
+    transform: rotate(-4deg);
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+  .theme-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: left;
+    text-transform: uppercase;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .meta dt { color: var(--muted); letter-spacing: 1.5px; margin-bottom: 3px; }
+  .meta dd { color: var(--text-2); margin-bottom: 14px; letter-spacing: 0.5px; }
+
+  .doc {
+    flex: 1;
+    padding: 56px clamp(24px, 6vw, 88px) 80px;
+    max-width: 880px;
+  }
+  .doc-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .doc-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 44px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause {
+    position: relative;
+    padding: 30px 0 30px 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause:last-of-type { border-bottom: none; }
+  .clause-num {
+    position: absolute;
+    top: 22px;
+    right: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 54px;
+    color: var(--ghost);
+    line-height: 1;
+    user-select: none;
+  }
+  .clause h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 14px;
+    max-width: 80%;
+  }
+  .clause p { font-size: 14.5px; color: var(--text-2); margin-bottom: 14px; max-width: 78ch; }
+  .clause ul { margin: 0 0 6px 20px; max-width: 78ch; }
+  .clause li { font-size: 14.5px; color: var(--text-2); margin-bottom: 10px; }
+  .clause strong { color: var(--text); }
+
+  .doc-footer {
+    margin-top: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 760px) {
+    .frame { flex-direction: column; }
+    .rail {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      overflow-x: auto;
+      gap: 16px;
+    }
+    .rail-tabs { flex-direction: row; }
+    .meta { display: none; }
+    .stamp { transform: none; padding: 6px 10px; }
+    .theme-toggle { white-space: nowrap; }
+    .doc { padding: 36px 22px 60px; }
+    .clause-num { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="rail">
+    <div class="rail-mark">⛓ SHACKLE AI</div>
+    <nav class="rail-tabs">
+      <a class="tab" href="/privacy-policy">PRIVACY</a>
+      <a class="tab" href="/terms">TERMS</a>
+      <a class="tab is-active" href="/refund-policy">REFUND</a>
+      <a class="tab" href="/roadmap">ROADMAP</a>
+      <a class="tab" href="/downloads">DOWNLOADS</a>
+    </nav>
+    <div class="stamp">NON-REFUND<br>-ABLE</div>
+    <dl class="meta">
+      <dt>Doc</dt><dd>REF-2.4.0</dd>
+      <dt>Status</dt><dd>Active</dd>
+      <dt>Gateway</dt><dd>Razorpay</dd>
+    </dl>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  </aside>
+
+  <main class="doc">
+    <div class="doc-eyebrow">Billing Document</div>
+    <h1>Cancellation &amp; Refund Policy</h1>
+    <div class="doc-meta">UPDATED: JULY 10, 2026 · COMMERCIAL SUBSCRIPTION DISCLOSURE</div>
+
+    <p style="max-width:78ch; margin-bottom:34px;">Shackle AI manages premium access models via an active monthly subscription program to support high-performance AI inference generation, automated voice profile allocations, and cloud network nodes.</p>
+
+    <section class="clause">
+      <span class="clause-num">01</span>
+      <h2>Subscription Cancellations</h2>
+      <p>Premium memberships are priced at a recurring monthly rate of $9.99. Users retain the absolute right to cancel subscription services at any phase. Cancellations can be completed directly through your application profile manager or by triggering the Razorpay Billing Portal option. Following a successful cancellation request, premium privileges remain fully accessible until the conclusion of the current monthly billing period.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">02</span>
+      <h2>Refund Windows &amp; Eligibility</h2>
+      <p>Because premium allocations activate processing resources instantly across system pipelines (including API allocations for customized Gemini assessments and ElevenLabs text-to-speech instances), standard recurring monthly charges are non-refundable. However, digital refund exceptions may be evaluated under specific conditions:</p>
+      <ul>
+        <li><strong>Technical Failure:</strong> Verified platform processing drops or desktop engine conflicts preventing access to premium tools within the initial 48 hours of billing.</li>
+        <li><strong>Accidental Renewal:</strong> Cancellation requests submitted within 24 hours immediately following an automated renewal cycle, provided no premium features (such as voice synthesis processing or bailout tokens) have been deployed.</li>
+      </ul>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">03</span>
+      <h2>Initiating an Evaluation</h2>
+      <p>To submit an escalation regarding subscription payment events, transmit your profile identifier, system log metrics, and transaction details received from Razorpay directly to our platform support queue for review.</p>
+    </section>
+
+    <div class="doc-footer">© 2026 SHACKLE AI · FINANCIAL TRANSACTIONS AND GATEWAY ALLOCATIONS PROCESSED SECURELY VIA RAZORPAY UNDER TOKENIZED VALIDATION LAYERS.</div>
+  </main>
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+</script>
+</body>
+</html>
+

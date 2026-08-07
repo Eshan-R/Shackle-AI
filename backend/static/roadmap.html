@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shackle AI — Roadmap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+  </script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root, html[data-theme="light"] {
+      --green:   #1f8f5c;
+      --green-tint: rgba(31,143,92,0.08);
+      --green-tint-2: rgba(31,143,92,0.18);
+      --amber:   #b8791f;
+      --amber-tint: rgba(184,121,31,0.12);
+      --blue:    #2f6fb3;
+      --blue-tint: rgba(47,111,179,0.12);
+      --muted2:  #8a8371;
+      --ink:     #f2ede1;
+      --header-bg: #ece5d2;
+      --rule:    #ddd2b3;
+      --muted:   #8a8371;
+      --sub:     #6b6552;
+      --text:    #23211b;
+      --text-2:  #55503f;
+    }
+    html[data-theme="dark"] {
+      --green:   #33c17a;
+      --green-tint: rgba(51,193,122,0.08);
+      --green-tint-2: rgba(51,193,122,0.22);
+      --amber:   #e8a83d;
+      --amber-tint: rgba(232,168,61,0.12);
+      --blue:    #4f8fd6;
+      --blue-tint: rgba(79,143,214,0.12);
+      --muted2:  #6b7178;
+      --ink:     #0b0d10;
+      --header-bg: #08100c;
+      --rule:    #262a2f;
+      --muted:   #6b7178;
+      --sub:     #9aa0a6;
+      --text:    #ffffff;
+      --text-2:  #c3c7cc;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--text-2);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    header {
+      background: var(--header-bg);
+      border-bottom: 2px solid var(--green);
+      padding: 20px 20px 0;
+      text-align: center;
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: 7px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--green); color: var(--green); }
+
+    .logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--text);
+      padding-top: 8px;
+    }
+    .logo span { color: var(--green); }
+    .tagline {
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      margin-top: 6px;
+      letter-spacing: 1.5px;
+    }
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 12px 0 18px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--green);
+      font-weight: 700;
+    }
+    .pulse-dot {
+      width: 7px; height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.25; transform: scale(0.7); }
+    }
+
+    .cadence-strip {
+      margin-top: 20px;
+      background: var(--green-tint);
+      border-top: 1px solid var(--green-tint-2);
+      padding: 14px 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--text-2);
+      letter-spacing: 0.3px;
+    }
+    .cadence-strip strong { color: var(--text); }
+
+    .container { max-width: 780px; margin: 0 auto; padding: 32px 16px 60px; }
+
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--sub);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .section-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    /* ── Roadmap dossier entries ── */
+    .dossier {
+      display: flex;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .dossier-tab {
+      width: 92px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      text-align: center;
+      padding: 14px 6px;
+    }
+    .tab-development { background: var(--green-tint); }
+    .tab-planned { background: var(--blue-tint); }
+    .tab-research { background: var(--amber-tint); }
+
+    .status-pill {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 3px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .status-development { background: var(--green); color: #fff; }
+    .status-planned { background: var(--blue); color: #fff; }
+    .status-research { border: 1px solid var(--amber); color: var(--amber); }
+
+    .target-window {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+    .target-label {
+      font-size: 8.5px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .dossier-body { flex: 1; padding: 18px 20px; min-width: 0; }
+
+    .dossier-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+    .dossier-title { font-family: 'IBM Plex Mono', monospace; font-size: 14.5px; font-weight: 700; color: var(--text); }
+    .dossier-category {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9.5px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .dossier-desc {
+      font-size: 13.5px;
+      color: var(--text-2);
+      line-height: 1.6;
+      max-width: 62ch;
+    }
+
+    .footnote {
+      margin-top: 30px;
+      padding: 16px 18px;
+      border: 1px dashed var(--rule);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .footer {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 34px;
+      letter-spacing: 0.5px;
+    }
+    .footer a { color: var(--green); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 560px) {
+      .dossier { flex-direction: column; }
+      .dossier-tab { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 10px 16px; }
+      .dossier-body { padding: 14px 16px 20px; }
+      .theme-toggle { position: static; margin: 0 auto 8px; display: block; width: fit-content; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  <div class="logo">⛓ SHACKLE AI <span>ROADMAP</span></div>
+  <div class="tagline">FUTURE SCALING DIRECTIVES · PROGRESSIVE DISCLOSURE QUEUE</div>
+  <div class="live-badge"><div class="pulse-dot"></div>DOSSIERS DECLASSIFIED AS THEY SHIP</div>
+
+  <div class="cadence-strip">
+    New capability dossiers are formally reviewed on a <strong>quarterly cycle</strong>; larger system overhauls
+    are sometimes held back for a <strong>semi-annual major release</strong>. Check back each cycle — items move
+    from Research → Planned → In Development as they clear review.
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="section-header-row">
+    <div class="section-title">Pending Deployment Queue</div>
+    <div class="section-count">4 DOSSIERS OPEN</div>
+  </div>
+
+  <div class="dossier">
+    <div class="dossier-tab tab-development">
+      <span class="status-pill status-development">In Dev</span>
+      <span class="target-window">Q4 2026</span>
+      <span class="target-label">Target Window</span>
+    </div>
+    <div class="dossier-body">
+      <div class="dossier-top">
+        <span class="dossier-title">Ghost Mode</span>
+        <span class="dossier-category">Premium Reputation Shield</span>
+      </div>
+      <p class="dossier-desc">Paid tier subscribers will be able to temporarily go invisible on the public league tables during highly chaotic weeks — protecting rank from public view without leaving the competition.</p>
+    </div>
+  </div>
+
+  <div class="dossier">
+    <div class="dossier-tab tab-planned">
+      <span class="status-pill status-planned">Planned</span>
+      <span class="target-window">Q1 2027</span>
+      <span class="target-label">Target Window</span>
+    </div>
+    <div class="dossier-body">
+      <div class="dossier-top">
+        <span class="dossier-title">Bailout Card</span>
+        <span class="dossier-category">Loss Aversion Insurance</span>
+      </div>
+      <p class="dossier-desc">A premium safety-net item that lets a user bypass the public "Hall of Frauds" broadcast and reverse one catastrophic Strike 3 score deduction, once per week.</p>
+    </div>
+  </div>
+
+  <div class="dossier">
+    <div class="dossier-tab tab-research">
+      <span class="status-pill status-research">Research</span>
+      <span class="target-window">Q2 2027</span>
+      <span class="target-label">Target Window</span>
+    </div>
+    <div class="dossier-body">
+      <div class="dossier-top">
+        <span class="dossier-title">1-on-1 Focus Duel</span>
+        <span class="dossier-category">Social Expansion</span>
+      </div>
+      <p class="dossier-desc">Challenge a rival directly from the league sidebar. Both sides wager a portion of their focus minutes, turning a study block into a head-to-head showdown.</p>
+    </div>
+  </div>
+
+  <div class="dossier">
+    <div class="dossier-tab tab-planned">
+      <span class="status-pill status-planned">Planned</span>
+      <span class="target-window">H2 2027</span>
+      <span class="target-label">Target Window</span>
+    </div>
+    <div class="dossier-body">
+      <div class="dossier-top">
+        <span class="dossier-title">Focus Persona Analytics</span>
+        <span class="dossier-category">Self-Optimization</span>
+      </div>
+      <p class="dossier-desc">Deep-dive visual telemetry graphs mapping exact daily procrastination patterns, culminating in an ongoing personal performance archetype.</p>
+    </div>
+  </div>
+
+  <div class="footnote">
+    NOTE: Target windows are directional, not contractual — they shift with engineering capacity, user feedback,
+    and what the review board decides deserves priority each cycle. Nothing here is billed or activated until
+    it's formally shipped.
+  </div>
+
+  <div class="footer">Questions about a dossier? Reach the team via your account's support queue. · <a href="/checkout">Back to Premium</a></div>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+</script>
+
+</body>
+</html>

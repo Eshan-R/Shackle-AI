@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shackle AI — Upgrade to Premium</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+  </script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root, html[data-theme="light"] {
+      --ink: #f2ede1;
+      --panel: #fbf9f3;
+      --rule: #ddd4bd;
+      --dash: #cabf9f;
+      --accent: #2f6fb3;
+      --accent-tint: #1c4570;
+      --text: #23211b;
+      --text-2: #55503f;
+      --muted: #8a8371;
+      --green: #1f8f5c;
+      --red: #c23a2f;
+      --btn-text: #fbf9f3;
+    }
+    html[data-theme="dark"] {
+      --ink: #0b0d10;
+      --panel: #14171b;
+      --rule: #262a2f;
+      --dash: #2c3036;
+      --accent: #4f8fd6;
+      --accent-tint: #6ba4e0;
+      --text: #ffffff;
+      --text-2: #d7dade;
+      --muted: #6b7178;
+      --green: #33c17a;
+      --red: #e0453a;
+      --btn-text: #071018;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 15% 10%, rgba(47,111,179,0.06), transparent 45%),
+        var(--ink);
+      color: var(--text-2);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .top-bar {
+      max-width: 440px;
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+    }
+    .theme-toggle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: 7px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Access card ── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      max-width: 440px;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .card-top {
+      padding: 30px 32px 24px;
+      border-bottom: 2px dashed var(--dash);
+      position: relative;
+    }
+    .card-top::before, .card-top::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      width: 14px; height: 14px;
+      background: var(--ink);
+      border-radius: 50%;
+    }
+    .card-top::before { left: -7px; }
+    .card-top::after { right: -7px; }
+
+    .logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--muted);
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo .clearance {
+      font-size: 9.5px;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 3px 7px;
+      letter-spacing: 1.5px;
+    }
+
+    h1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 23px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .desc { font-size: 13.5px; color: var(--muted); margin-bottom: 22px; }
+
+    .price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .price-amt {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .price-meta { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Stub / features ── */
+    .card-stub { padding: 26px 32px 32px; }
+
+    .stub-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .features { list-style: none; margin-bottom: 26px; }
+    .features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 9px 0;
+      font-size: 13.5px;
+      color: var(--text-2);
+      line-height: 1.45;
+    }
+    .check {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--green);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--accent);
+      border: none;
+      color: var(--btn-text);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.1s;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+    .btn:hover:not(:disabled) { background: var(--accent-tint); }
+    .btn:active:not(:disabled) { transform: scale(0.99); }
+    .btn:disabled { background: var(--rule); color: var(--muted); cursor: not-allowed; }
+
+    .secure {
+      font-size: 10.5px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 14px;
+      letter-spacing: 1px;
+      font-family: 'IBM Plex Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    .error-msg {
+      display: none;
+      font-size: 12.5px;
+      color: var(--red);
+      text-align: center;
+      margin-top: 12px;
+      padding: 10px;
+      background: rgba(194,58,47,0.08);
+      border: 1px solid rgba(194,58,47,0.25);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .trial-banner {
+      background: rgba(217, 119, 6, 0.1);
+      border: 1px solid rgba(217, 119, 6, 0.25);
+      color: #d97706;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      border-radius: 4px;
+    }
+
+    /* ── Legal footer ── */
+    .legal-footer {
+      margin-top: 22px;
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      font-size: 10.5px;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+    .legal-footer a { color: var(--muted); text-decoration: none; transition: color 0.15s; }
+    .legal-footer a:hover { color: var(--accent); }
+
+    /* ── Success view ── */
+    .success-view {
+      display: none;
+      text-align: center;
+      padding: 40px 32px;
+    }
+    .success-icon {
+      width: 48px; height: 48px;
+      margin: 0 auto 18px;
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 20px;
+      color: var(--green);
+    }
+    .success-view h2 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 19px;
+      color: var(--green);
+      margin-bottom: 10px;
+      letter-spacing: 0.3px;
+    }
+    .success-view p { font-size: 13.5px; color: var(--muted); line-height: 1.6; }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block;
+      width: 12px; height: 12px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: var(--btn-text);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+</div>
+
+<div class="card">
+
+  <!-- ── Checkout view ── -->
+  <div id="checkout-view">
+    <div class="card-top">
+      <div class="logo"><span>⛓ SHACKLE AI</span><span class="clearance">ACCESS CARD</span></div>
+      <h1>Upgrade to Premium</h1>
+      <p class="desc">Unlock the full enforcement arsenal.</p>
+      <div id="trial-container"></div>
+      <div class="price-row">
+        <div class="price-amt">$9.99</div>
+        <div class="price-meta">/ month<br>Cancel anytime via billing portal</div>
+      </div>
+    </div>
+
+    <div class="card-stub">
+      <div class="stub-label">Clearance Includes</div>
+      <ul class="features">
+        <li><span class="check">[x]</span> Voice cloning — AI roasts delivered in your mentor's actual voice</li>
+        <li><span class="check">[x]</span> Ghost Mode — go invisible on the public leaderboard during chaotic weeks</li>
+        <li><span class="check">[x]</span> Bailout Card — reverse one catastrophic Strike 3 per week</li>
+        <li><span class="check">[x]</span> Focus Persona Analytics — weekly AI-generated performance deep-dive</li>
+        <li><span class="check">[x]</span> Priority Gemini roast generation — faster, sharper, more personalized</li>
+      </ul>
+
+      <button class="btn" id="pay-btn" onclick="startCheckout()">
+        Pay $9.99 — Activate Premium
+      </button>
+      <div class="error-msg" id="error-msg"></div>
+      <p class="secure">Secured · Razorpay</p>
+    </div>
+  </div>
+
+  <!-- ── Success view ── -->
+  <div class="success-view" id="success-view">
+    <div class="success-icon">✓</div>
+    <h2>Payment Successful</h2>
+    <p>Your Premium tier is now active.</p>
+    <p style="margin-top:16px;">Close this window and relaunch Shackle AI to access all Premium features.</p>
+  </div>
+</div>
+
+<div class="legal-footer">
+  <a href="/privacy-policy" target="_blank">Privacy Policy</a>
+  <span style="color:var(--rule)">•</span>
+  <a href="/terms" target="_blank">Terms of Service</a>
+  <span style="color:var(--rule)">•</span>
+  <a href="/refund-policy" target="_blank">Refund Policy</a>
+  <span style="color:var(--rule)">•</span>
+  <a href="/roadmap" target="_blank">Roadmap</a>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+  // ================================================================
+  // 🔥 DYNAMIC CURRENCY DETECTION & CONVERSION
+  // ================================================================
+
+  // Base price in USD cents (Razorpay uses smallest currency unit)
+  const BASE_PRICE_USD_CENTS = 999; // $9.99
+
+  // Country → Currency mapping
+  const COUNTRY_CURRENCY_MAP = {
+    'IN': { code: 'INR', symbol: '₹', rate: null },
+    'GB': { code: 'GBP', symbol: '£', rate: null },
+    'EU': { code: 'EUR', symbol: '€', rate: null },
+    'CA': { code: 'CAD', symbol: 'C$', rate: null },
+    'AU': { code: 'AUD', symbol: 'A$', rate: null },
+    'JP': { code: 'JPY', symbol: '¥', rate: null },
+    'BR': { code: 'BRL', symbol: 'R$', rate: null },
+    'MX': { code: 'MXN', symbol: 'MX$', rate: null },
+    'NZ': { code: 'NZD', symbol: 'NZ$', rate: null },
+    'SG': { code: 'SGD', symbol: 'S$', rate: null },
+    'CH': { code: 'CHF', symbol: 'CHF', rate: null },
+    'NO': { code: 'NOK', symbol: 'kr', rate: null },
+    'SE': { code: 'SEK', symbol: 'kr', rate: null },
+    'DK': { code: 'DKK', symbol: 'kr', rate: null },
+    'PL': { code: 'PLN', symbol: 'zł', rate: null },
+    'ZA': { code: 'ZAR', symbol: 'R', rate: null },
+    'TR': { code: 'TRY', symbol: '₺', rate: null },
+    'RU': { code: 'RUB', symbol: '₽', rate: null },
+    'KR': { code: 'KRW', symbol: '₩', rate: null },
+    'CN': { code: 'CNY', symbol: '¥', rate: null },
+  };
+
+  // Fallback rates (approx as of 2024) – used if API fails
+  const FALLBACK_RATES = {
+    'INR': 83.0,
+    'GBP': 0.78,
+    'EUR': 0.92,
+    'CAD': 1.36,
+    'AUD': 1.50,
+    'JPY': 148.0,
+    'BRL': 5.10,
+    'MXN': 17.50,
+    'NZD': 1.63,
+    'SGD': 1.34,
+    'CHF': 0.88,
+    'NOK': 10.50,
+    'SEK': 10.60,
+    'DKK': 6.85,
+    'PLN': 4.00,
+    'ZAR': 18.20,
+    'TRY': 30.50,
+    'RUB': 90.00,
+    'KRW': 1330.0,
+    'CNY': 7.20,
+  };
+
+  // Cache for currency info
+  let currencyInfo = {
+    code: 'USD',
+    symbol: '$',
+    amount: 999, // cents
+    displayAmount: '9.99',
+    rate: 1.0,
+    isFallback: false
+  };
+
+  // ================================================================
+  // STEP 1: Detect User's Country
+  // ================================================================
+
+  async function detectCountry() {
+    try {
+      // Option A: Use ip-api.com (free, no API key)
+      const response = await fetch('https://ipapi.co/json/');
+      const data = await response.json();
+      return data.country_code || 'US';
+    } catch (err) {
+      console.warn('IP detection failed, using fallback:', err);
+      return null;
+    }
+  }
+
+  // Alternative: Use freegeoip.app
+  async function detectCountryAlt() {
+    try {
+      const response = await fetch('https://freegeoip.app/json/');
+      const data = await response.json();
+      return data.country_code || 'US';
+    } catch (err) {
+      console.warn('Fallback IP detection failed:', err);
+      return null;
+    }
+  }
+
+  // ================================================================
+  // STEP 2: Get Exchange Rate
+  // ================================================================
+
+  async function getExchangeRate(fromCurrency, toCurrency) {
+    try {
+      // Use exchangerate-api.com (free, no API key for basic)
+      const url = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      return data.rates[toCurrency] || null;
+    } catch (err) {
+      console.warn('Exchange rate API failed, using fallback:', err);
+      return FALLBACK_RATES[toCurrency] || null;
+    }
+  }
+
+  // ================================================================
+  // STEP 3: Determine Currency & Price
+  // ================================================================
+
+  async function determineCurrency() {
+    const loadingEl = document.getElementById('currency-loading');
+    const priceAmountEl = document.getElementById('price-amount');
+    const payAmountEl = document.getElementById('pay-amount');
+    const priceMetaEl = document.getElementById('price-meta');
+
+    try {
+      // Detect country
+      let countryCode = await detectCountry();
+      if (!countryCode) {
+        // Try alternative
+        countryCode = await detectCountryAlt();
+      }
+
+      // Default to USD if detection fails
+      if (!countryCode || !COUNTRY_CURRENCY_MAP[countryCode]) {
+        console.log('Using USD (default) — no country mapping found');
+        loadingEl.textContent = 'Pricing in USD';
+        updateUI('USD', '$', 999, '9.99', 1.0);
+        return;
+      }
+
+      const countryData = COUNTRY_CURRENCY_MAP[countryCode];
+      const targetCurrency = countryData.code;
+
+      // If USD, no conversion needed
+      if (targetCurrency === 'USD') {
+        loadingEl.textContent = 'Pricing in USD';
+        updateUI('USD', '$', 999, '9.99', 1.0);
+        return;
+      }
+
+      // Get exchange rate
+      let rate = await getExchangeRate('USD', targetCurrency);
+      let isFallback = false;
+
+      if (!rate || rate <= 0) {
+        rate = FALLBACK_RATES[targetCurrency] || 1.0;
+        isFallback = true;
+        console.warn(`Using fallback rate for ${targetCurrency}: ${rate}`);
+      }
+
+      // Calculate price in local currency
+      const priceInCents = Math.round(BASE_PRICE_USD_CENTS * rate);
+      const priceInCurrency = priceInCents / 100;
+
+      // Format display
+      const formattedPrice = priceInCurrency.toFixed(2);
+      const currencySymbol = countryData.symbol || '$';
+
+      // Check if this currency is supported by Razorpay
+      const supportedCurrencies = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY', 'BRL', 'MXN', 'NZD', 'SGD', 'CHF', 'NOK', 'SEK', 'DKK', 'PLN', 'ZAR', 'TRY', 'RUB', 'KRW', 'CNY'];
+      const isSupported = supportedCurrencies.includes(targetCurrency);
+
+      if (!isSupported) {
+        loadingEl.textContent = `Currency ${targetCurrency} not supported, using USD`;
+        updateUI('USD', '$', 999, '9.99', 1.0);
+        return;
+      }
+
+      // Store currency info
+      currencyInfo = {
+        code: targetCurrency,
+        symbol: currencySymbol,
+        amount: priceInCents,
+        displayAmount: formattedPrice,
+        rate: rate,
+        isFallback: isFallback
+      };
+
+      loadingEl.textContent = isFallback
+        ? `Pricing in ${targetCurrency} (approx)`
+        : `Pricing in ${targetCurrency}`;
+
+      updateUI(targetCurrency, currencySymbol, priceInCents, formattedPrice, rate);
+
+      console.log(`[Currency] Detected: ${countryCode} → ${targetCurrency} @ ${rate} = ${formattedPrice}`);
+
+    } catch (err) {
+      console.error('Currency detection failed, falling back to USD:', err);
+      loadingEl.textContent = 'Pricing in USD (fallback)';
+      updateUI('USD', '$', 999, '9.99', 1.0);
+    }
+  }
+
+  // ================================================================
+  // STEP 4: Update UI
+  // ================================================================
+
+  function updateUI(currencyCode, symbol, amountCents, displayAmount, rate) {
+    const priceAmountEl = document.getElementById('price-amount');
+    const payAmountEl = document.getElementById('pay-amount');
+    const priceMetaEl = document.getElementById('price-meta');
+
+    // Update price display
+    const displayText = `${symbol}${displayAmount}`;
+    priceAmountEl.textContent = displayText;
+    payAmountEl.textContent = displayText;
+
+    // Update meta with currency info
+    const isSupported = currencyCode !== 'USD';
+    if (isSupported) {
+      priceMetaEl.innerHTML = `/ month (≈ $${(amountCents / 100 / rate).toFixed(2)} USD)<br>Cancel anytime via billing portal`;
+    } else {
+      priceMetaEl.innerHTML = `/ month<br>Cancel anytime via billing portal`;
+    }
+  }
+
+  // ================================================================
+  // STEP 5: Razorpay Checkout (Updated)
+  // ================================================================
+
+  const userId = new URLSearchParams(window.location.search).get('user_id') || 'unknown';
+
+  async function loadUserStatus() {
+    try {
+      const res = await fetch(`/v1/billing/user-status?user_id=${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.billing_lifecycle && data.billing_lifecycle.status_code === 'TRIAL_ACTIVE') {
+          const days = data.billing_lifecycle.days_remaining_in_trial;
+          const container = document.getElementById('trial-container');
+          if (container) {
+            container.innerHTML = `<div class="trial-banner">⏳ ACTIVE TRIAL: ${days} DAYS REMAINING</div>`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to retrieve trial status context:", e);
+    }
+  }
+
+  // Theme toggle
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+
+  // ── Main Checkout ──
+  async function startCheckout() {
+    const btn = document.getElementById('pay-btn');
+    const errorEl = document.getElementById('error-msg');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Preparing checkout...';
+    errorEl.style.display = 'none';
+
+    try {
+      // Get payment config from backend
+      const cfgRes = await fetch('/v1/billing/config');
+      const cfg = await cfgRes.json();
+
+      if (!cfg.key_id) {
+        throw new Error('Payment gateway not configured on this server. Contact the admin.');
+      }
+
+      // Create order with the detected currency and amount
+      const orderRes = await fetch(
+        `/v1/billing/create-order?user_id=${encodeURIComponent(userId)}&currency=${currencyInfo.code}&amount_cents=${currencyInfo.amount}`,
+        {
+          method: 'POST'
+        }
+      );
+      const order = await orderRes.json();
+
+      if (!orderRes.ok || order.detail) {
+        throw new Error(order.detail || 'Failed to create payment order.');
+      }
+
+      const options = {
+        key: cfg.key_id,
+        amount: order.amount,      // Converted amount returned from server order
+        currency: order.currency,  // Currency returned from server order
+        name: 'Shackle AI',
+        description: `Premium — Monthly Subscription (${order.currency})`,
+        order_id: order.order_id,
+        notes: {
+          username: userId,
+          currency: order.currency,
+          amount_cents: order.amount,
+          rate: currencyInfo.rate
+        },
+        // Enable & prioritize UPI (GPay, PhonePe, Paytm, BHIM, QR Code) for INR payments
+        config: order.currency === 'INR' ? {
+          display: {
+            blocks: {
+              upi: {
+                name: 'Pay via UPI / GPay / PhonePe / QR Code',
+                instruments: [
+                  { method: 'upi' }
+                ]
+              }
+            },
+            sequence: ['block.upi'],
+            preferences: {
+              show_default_blocks: true
+            }
+          }
+        } : undefined,
+        handler: async function(response) {
+          try {
+            await fetch(`/v1/billing/simulate-success?user_id=${encodeURIComponent(userId)}`, {
+              method: 'POST'
+            });
+          } catch (e) {
+            console.error("Failed to update user tier to premium locally:", e);
+          }
+          document.getElementById('checkout-view').style.display = 'none';
+          document.getElementById('success-view').style.display = 'block';
+        },
+        modal: {
+          ondismiss: function() {
+            btn.disabled = false;
+            btn.innerHTML = `Pay ${currencyInfo.symbol}${currencyInfo.displayAmount} — Activate Premium`;
+          }
+        },
+        prefill: { name: userId },
+        theme: { color: '#2f6fb3' }
+      };
+
+      btn.disabled = false;
+      btn.innerHTML = `Pay ${currencyInfo.symbol}${currencyInfo.displayAmount} — Activate Premium`;
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = `Pay ${currencyInfo.symbol}${currencyInfo.displayAmount} — Activate Premium`;
+      errorEl.textContent = `Error: ${err.message}`;
+      errorEl.style.display = 'block';
+    }
+  }
+
+  // ================================================================
+  // STEP 6: Initialize on Load
+  // ================================================================
+
+  loadUserStatus();
+
+  // Run currency detection
+  determineCurrency().then(() => {
+    console.log('[Currency] Detection complete:', currencyInfo);
+  });
+
+  // Expose for debugging
+  window.__currencyInfo = currencyInfo;
+</script>
+
+</body>
+</html>

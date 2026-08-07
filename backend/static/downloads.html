@@ -1,0 +1,481 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shackle AI — Downloads</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+  </script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root, html[data-theme="light"] {
+      --green:   #1f8f5c;
+      --green-tint: rgba(31,143,92,0.08);
+      --green-tint-2: rgba(31,143,92,0.18);
+      --amber:   #b8791f;
+      --amber-tint: rgba(184,121,31,0.12);
+      --blue:    #2f6fb3;
+      --blue-tint: rgba(47,111,179,0.12);
+      --muted2:  #8a8371;
+      --ink:     #f2ede1;
+      --header-bg: #ece5d2;
+      --rule:    #ddd2b3;
+      --muted:   #8a8371;
+      --sub:     #6b6552;
+      --text:    #23211b;
+      --text-2:  #55503f;
+      --card-bg: #fbf9f3;
+    }
+    html[data-theme="dark"] {
+      --green:   #33c17a;
+      --green-tint: rgba(51,193,122,0.08);
+      --green-tint-2: rgba(51,193,122,0.22);
+      --amber:   #e8a83d;
+      --amber-tint: rgba(232,168,61,0.12);
+      --blue:    #4f8fd6;
+      --blue-tint: rgba(79,143,214,0.12);
+      --muted2:  #6b7178;
+      --ink:     #0b0d10;
+      --header-bg: #08100c;
+      --rule:    #262a2f;
+      --muted:   #6b7178;
+      --sub:     #9aa0a6;
+      --text:    #ffffff;
+      --text-2:  #c3c7cc;
+      --card-bg: #10141a;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--text-2);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    header {
+      background: var(--header-bg);
+      border-bottom: 2px solid var(--green);
+      padding: 20px 20px 0;
+      text-align: center;
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: 7px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--green); color: var(--green); }
+
+    .logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--text);
+      padding-top: 8px;
+    }
+    .logo span { color: var(--green); }
+    .tagline {
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      margin-top: 6px;
+      letter-spacing: 1.5px;
+      padding-bottom: 20px;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; padding: 32px 16px 60px; }
+
+    /* ── Signature element: primary platform-detected download panel ── */
+    .primary-download {
+      background: var(--card-bg);
+      border: 1px solid var(--green-tint-2);
+      border-radius: 8px;
+      padding: 28px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .primary-download::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, var(--green-tint), transparent 65%);
+      pointer-events: none;
+    }
+    .primary-icon {
+      font-size: 34px;
+      margin-bottom: 10px;
+      display: inline-block;
+      animation: floatIcon 2.6s ease-in-out infinite;
+    }
+    @keyframes floatIcon {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+    .primary-detected {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .primary-platform-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(20px, 5vw, 26px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .primary-version {
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 14px 26px;
+      border-radius: 5px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--green-tint-2); filter: brightness(1.05); }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--rule); }
+    .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+    .other-platforms {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .platform-chip {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: 8px 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .platform-chip:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── Release history list ── */
+    .section-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 44px 0 6px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--sub);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .section-count {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--muted);
+      letter-spacing: 1px;
+    }
+
+    .release-entry {
+      display: flex;
+      border-bottom: 1px solid var(--rule);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: revealUp 0.45s ease forwards;
+    }
+    @keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
+
+    .release-tab {
+      width: 96px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      text-align: center;
+      padding: 16px 6px;
+      background: var(--green-tint);
+    }
+    .release-version { font-size: 13px; font-weight: 700; color: var(--text); }
+    .release-date { font-size: 8.5px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .latest-pill {
+      font-size: 8.5px; font-weight: 700; letter-spacing: 1px;
+      background: var(--green); color: #fff;
+      padding: 2px 6px; border-radius: 3px; text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .release-body { flex: 1; padding: 18px 20px; min-width: 0; }
+    .release-changelog { list-style: none; margin-bottom: 14px; }
+    .release-changelog li {
+      font-size: 13px;
+      color: var(--text-2);
+      line-height: 1.7;
+      padding-left: 16px;
+      position: relative;
+    }
+    .release-changelog li::before {
+      content: '›';
+      position: absolute; left: 0;
+      color: var(--green);
+      font-weight: 700;
+    }
+    .release-builds {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .build-link {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      border: 1px solid var(--blue-tint);
+      background: var(--blue-tint);
+      padding: 6px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    .build-link:hover { text-decoration: underline; }
+    .build-size { color: var(--muted); font-weight: 400; }
+
+    .maintainer-note {
+      margin-top: 30px;
+      padding: 16px 18px;
+      border: 1px dashed var(--rule);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .maintainer-note code {
+      background: var(--green-tint);
+      color: var(--text);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .footer {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 30px;
+      letter-spacing: 0.5px;
+    }
+    .footer a { color: var(--green); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .load-state {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      color: var(--muted);
+      padding: 30px 0;
+    }
+
+    @media (max-width: 560px) {
+      .release-entry { flex-direction: column; }
+      .release-tab { width: 100%; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 10px 16px; }
+      .release-body { padding: 14px 16px 20px; }
+      .theme-toggle { position: static; margin: 0 auto 8px; display: block; width: fit-content; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .release-entry, .primary-icon { animation: none !important; opacity: 1 !important; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  <div class="logo">⛓ SHACKLE AI <span>DOWNLOADS</span></div>
+  <div class="tagline">DESKTOP ENFORCEMENT CLIENT · WINDOWS · MACOS · LINUX</div>
+</header>
+
+<div class="container">
+
+  <div class="primary-download" id="primary-download">
+    <div class="load-state">Detecting your platform...</div>
+  </div>
+
+  <div class="other-platforms" id="other-platforms"></div>
+
+  <div class="section-header-row">
+    <div class="section-title">Release History</div>
+    <div class="section-count" id="release-count"></div>
+  </div>
+
+  <div id="release-list">
+    <div class="load-state">Loading release manifest...</div>
+  </div>
+
+  <div class="maintainer-note">
+    MAINTAINER NOTE — to publish a new release, edit <code>/static/releases.json</code> and add a new entry
+    to the top of the <code>releases</code> array with <code>"latest": true</code> (and flip the previous
+    entry's <code>latest</code> to <code>false</code>). No rebuild or redeploy of this page is required —
+    it's read fresh on every page load.
+  </div>
+
+  <div class="footer">Having trouble installing? <a href="/roadmap">See what's next</a> · <a href="/checkout">Go Premium</a></div>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+
+  const PLATFORM_META = {
+    windows: { icon: '⊞', name: 'Windows' },
+    mac:     { icon: '⌘', name: 'macOS' },
+    linux:   { icon: '🐧', name: 'Linux' }
+  };
+
+  function detectPlatform() {
+    const ua = (navigator.userAgent || '').toLowerCase();
+    const plat = (navigator.platform || '').toLowerCase();
+    if (plat.includes('win') || ua.includes('windows')) return 'windows';
+    if (plat.includes('mac') || ua.includes('mac os')) return 'mac';
+    if (plat.includes('linux') || ua.includes('linux')) return 'linux';
+    return 'windows'; // sensible default
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  function formatDate(iso) {
+    try {
+      return new Date(iso + 'T00:00:00Z').toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch { return iso; }
+  }
+
+  async function loadReleases() {
+    const primaryEl = document.getElementById('primary-download');
+    const otherEl = document.getElementById('other-platforms');
+    const listEl = document.getElementById('release-list');
+    const countEl = document.getElementById('release-count');
+
+    let data;
+    try {
+      const res = await fetch('/static/releases.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+    } catch (err) {
+      primaryEl.innerHTML = '<div class="load-state">Could not load release manifest. Please check back shortly.</div>';
+      listEl.innerHTML = '';
+      console.error('[downloads] Failed to load releases.json:', err);
+      return;
+    }
+
+    const releases = (data.releases || []).slice();
+    if (releases.length === 0) {
+      primaryEl.innerHTML = '<div class="load-state">No releases published yet.</div>';
+      listEl.innerHTML = '';
+      return;
+    }
+
+    const latest = releases.find(r => r.latest) || releases[0];
+    const detected = detectPlatform();
+    const primaryBuild = latest.builds.find(b => b.platform === detected) || latest.builds[0];
+    const meta = PLATFORM_META[primaryBuild.platform] || { icon: '⬇', name: primaryBuild.platform };
+
+    primaryEl.innerHTML = `
+      <div class="primary-icon">${meta.icon}</div>
+      <div class="primary-detected">Detected platform</div>
+      <div class="primary-platform-name">${escapeHtml(meta.name)}</div>
+      <div class="primary-version">Shackle AI v${escapeHtml(latest.version)} · ${escapeHtml(primaryBuild.size || '')}</div>
+      <a class="btn btn-primary" href="${escapeHtml(primaryBuild.url)}">⬇ Download for ${escapeHtml(meta.name)}</a>
+    `;
+
+    const otherBuilds = latest.builds.filter(b => b !== primaryBuild);
+    otherEl.innerHTML = otherBuilds.map(b => {
+      const m = PLATFORM_META[b.platform] || { icon: '⬇', name: b.platform };
+      return `<a class="platform-chip" href="${escapeHtml(b.url)}">${m.icon} ${escapeHtml(m.name)}</a>`;
+    }).join('');
+
+    countEl.textContent = releases.length + (releases.length === 1 ? ' RELEASE' : ' RELEASES');
+
+    listEl.innerHTML = releases.map((rel, idx) => {
+      const changelogItems = (rel.changelog || []).map(c => `<li>${escapeHtml(c)}</li>`).join('');
+      const buildLinks = (rel.builds || []).map(b => {
+        const m = PLATFORM_META[b.platform] || { icon: '⬇', name: b.platform };
+        return `<a class="build-link" href="${escapeHtml(b.url)}">${m.icon} ${escapeHtml(m.name)} <span class="build-size">${escapeHtml(b.size || '')}</span></a>`;
+      }).join('');
+      return `
+        <div class="release-entry" style="animation-delay:${0.05 * idx}s">
+          <div class="release-tab">
+            <span class="release-version">v${escapeHtml(rel.version)}</span>
+            <span class="release-date">${escapeHtml(formatDate(rel.date))}</span>
+            ${rel.latest ? '<span class="latest-pill">Latest</span>' : ''}
+          </div>
+          <div class="release-body">
+            <ul class="release-changelog">${changelogItems}</ul>
+            <div class="release-builds">${buildLinks}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  loadReleases();
+</script>
+
+</body>
+</html>

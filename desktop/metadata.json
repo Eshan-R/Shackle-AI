@@ -1,0 +1,6 @@
+{
+  "name": "Shackle AI",
+  "description": "An elegant, desktop-integrated focus timer and productivity assistant with automatic app blocking, gaming leagues, and AI focus reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

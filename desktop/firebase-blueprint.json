@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information including username, display name, email, and gamification progress.",
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Unique handle prefixed with @"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "Optional avatar image URL"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's registered email address"
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Earned experience points"
+        },
+        "streak": {
+          "type": "integer",
+          "description": "Current consecutive days active streak"
+        },
+        "strikes": {
+          "type": "string",
+          "description": "Current strike details or 'None'"
+        },
+        "tier": {
+          "type": "string",
+          "description": "Subscription tier status"
+        },
+        "level": {
+          "type": "integer",
+          "description": "Gamification level"
+        },
+        "league": {
+          "type": "string",
+          "description": "Gamified competition league category"
+        },
+        "billing_lifecycle": {
+          "type": "object",
+          "properties": {
+            "access_granted": { "type": "boolean" },
+            "status_code": { "type": "string", "enum": ["TRIAL_ACTIVE", "TRIAL_EXPIRED", "PREMIUM_ACTIVE"] },
+            "days_remaining_in_trial": { "type": "integer" }
+          },
+          "required": ["access_granted", "status_code", "days_remaining_in_trial"]
+        },
+        "gamification": {
+          "type": "object",
+          "properties": {
+            "rest_permits": { "type": "integer" },
+            "rest_day_active": { "type": "boolean" },
+            "last_permit_reset": { "type": "string" }
+          },
+          "required": ["rest_permits", "rest_day_active"]
+        }
+      },
+      "required": ["username", "displayName", "email", "xp", "streak", "strikes", "tier", "level"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles database matching user doc uid."
+    }
+  }
+}

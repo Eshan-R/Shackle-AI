@@ -1,0 +1,381 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shackle AI — Welcome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+  </script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root, html[data-theme="light"] {
+      --green:   #1f8f5c;
+      --green-tint: rgba(31,143,92,0.08);
+      --green-tint-2: rgba(31,143,92,0.18);
+      --amber:   #b8791f;
+      --amber-tint: rgba(184,121,31,0.12);
+      --blue:    #2f6fb3;
+      --blue-tint: rgba(47,111,179,0.12);
+      --muted2:  #8a8371;
+      --ink:     #f2ede1;
+      --header-bg: #ece5d2;
+      --rule:    #ddd2b3;
+      --muted:   #8a8371;
+      --sub:     #6b6552;
+      --text:    #23211b;
+      --text-2:  #55503f;
+      --card-bg: #fbf9f3;
+    }
+    html[data-theme="dark"] {
+      --green:   #33c17a;
+      --green-tint: rgba(51,193,122,0.08);
+      --green-tint-2: rgba(51,193,122,0.22);
+      --amber:   #e8a83d;
+      --amber-tint: rgba(232,168,61,0.12);
+      --blue:    #4f8fd6;
+      --blue-tint: rgba(79,143,214,0.12);
+      --muted2:  #6b7178;
+      --ink:     #0b0d10;
+      --header-bg: #08100c;
+      --rule:    #262a2f;
+      --muted:   #6b7178;
+      --sub:     #9aa0a6;
+      --text:    #ffffff;
+      --text-2:  #c3c7cc;
+      --card-bg: #10141a;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--text-2);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    header {
+      background: var(--header-bg);
+      border-bottom: 2px solid var(--green);
+      padding: 20px 20px 0;
+      text-align: center;
+      position: relative;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-2);
+      background: transparent;
+      border: 1px solid var(--rule);
+      padding: 7px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--green); color: var(--green); }
+
+    .logo {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(20px, 5vw, 28px);
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--text);
+      padding-top: 8px;
+    }
+    .logo span { color: var(--green); }
+    .tagline {
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      margin-top: 6px;
+      letter-spacing: 1.5px;
+      padding-bottom: 20px;
+    }
+
+    .container { max-width: 780px; margin: 0 auto; padding: 40px 16px 60px; }
+
+    /* ── Signature element: terminal boot sequence ── */
+    .boot-terminal {
+      background: var(--card-bg);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    .boot-terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px;
+      background: var(--header-bg);
+      border-bottom: 1px solid var(--rule);
+    }
+    .boot-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--rule); }
+    .boot-dot.red { background: #d9645a; }
+    .boot-dot.amber { background: var(--amber); }
+    .boot-dot.green { background: var(--green); }
+    .boot-terminal-label {
+      margin-left: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .boot-terminal-body {
+      padding: 22px 20px 26px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      line-height: 1.9;
+      min-height: 210px;
+    }
+    .boot-line { color: var(--text-2); opacity: 0; }
+    .boot-line.show { opacity: 1; animation: lineIn 0.35s ease forwards; }
+    .boot-line .ok { color: var(--green); font-weight: 700; }
+    .boot-line .dim { color: var(--muted); }
+    @keyframes lineIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .boot-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background: var(--green);
+      vertical-align: middle;
+      margin-left: 2px;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .welcome-heading {
+      margin-top: 34px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(22px, 5.5vw, 32px);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: revealUp 0.5s ease forwards;
+      animation-delay: 1.9s;
+    }
+    .welcome-heading span { color: var(--green); }
+    .welcome-sub {
+      margin-top: 10px;
+      font-size: 14.5px;
+      line-height: 1.7;
+      max-width: 58ch;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: revealUp 0.5s ease forwards;
+      animation-delay: 2.05s;
+    }
+    @keyframes revealUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Feature grid ── */
+    .feature-grid {
+      margin-top: 34px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--rule);
+      border-radius: 6px;
+      padding: 16px 14px;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: revealUp 0.5s ease forwards;
+    }
+    .feature-card:nth-child(1) { animation-delay: 2.25s; }
+    .feature-card:nth-child(2) { animation-delay: 2.4s; }
+    .feature-card:nth-child(3) { animation-delay: 2.55s; }
+    .feature-icon {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+    .feature-icon.green { background: var(--green-tint); color: var(--green); }
+    .feature-icon.amber { background: var(--amber-tint); color: var(--amber); }
+    .feature-icon.blue  { background: var(--blue-tint);  color: var(--blue); }
+    .feature-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text);
+      text-transform: uppercase;
+    }
+    .feature-desc {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    /* ── CTA row ── */
+    .cta-row {
+      margin-top: 32px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: revealUp 0.5s ease forwards;
+      animation-delay: 2.7s;
+    }
+    .btn {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 13px 20px;
+      border-radius: 5px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px var(--green-tint-2); filter: brightness(1.05); }
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--rule); }
+    .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+
+    .footer {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-top: 46px;
+      letter-spacing: 0.5px;
+    }
+    .footer a { color: var(--green); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 640px) {
+      .feature-grid { grid-template-columns: 1fr; }
+      .theme-toggle { position: static; margin: 0 auto 8px; display: block; width: fit-content; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .boot-line, .welcome-heading, .welcome-sub, .feature-card, .cta-row {
+        animation: none !important; opacity: 1 !important; transform: none !important;
+      }
+      .boot-cursor { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  <div class="logo">⛓ SHACKLE AI <span>DASHBOARD</span></div>
+  <div class="tagline">FOCUS ENFORCEMENT SYSTEM · SESSION HANDOFF COMPLETE</div>
+</header>
+
+<div class="container">
+
+  <div class="boot-terminal">
+    <div class="boot-terminal-bar">
+      <div class="boot-dot red"></div>
+      <div class="boot-dot amber"></div>
+      <div class="boot-dot green"></div>
+      <div class="boot-terminal-label">shackle-init.log</div>
+    </div>
+    <div class="boot-terminal-body" id="boot-body"></div>
+  </div>
+
+  <h1 class="welcome-heading" id="welcome-heading">Welcome back, <span id="welcome-name">Operative</span>.</h1>
+  <p class="welcome-sub">
+    Your enforcement layer is live. Every focus block you log from here feeds your streak, your XP,
+    and your standing on the league table — and every distraction gets noticed. Let's get to work.
+  </p>
+
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon green">🔥</div>
+      <div class="feature-title">Streak Engine</div>
+      <div class="feature-desc">Consecutive focused days compound your standing. Miss a day, and it resets — no exceptions.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon amber">⚠</div>
+      <div class="feature-title">Strike Monitor</div>
+      <div class="feature-desc">Distraction is tracked in real time. Three strikes triggers a 72-hour lockout on new sessions.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon blue">🏆</div>
+      <div class="feature-title">Shackle Leagues</div>
+      <div class="feature-desc">Your XP ranks you against every other operative in your tier, live, every week.</div>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="/downloads">⬇ Download Shackle AI</a>
+    <a class="btn btn-secondary" href="/roadmap">View Roadmap</a>
+  </div>
+
+  <div class="footer">Not enforced yet? <a href="/downloads">Get the desktop app</a> · <a href="/checkout">Go Premium</a></div>
+
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+
+  // Personalize greeting via ?name= query param, e.g. dashboard.html?name=Eshan
+  (function personalize() {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('name');
+    if (name && name.trim()) {
+      const safe = name.trim().slice(0, 40).replace(/[<>]/g, '');
+      document.getElementById('welcome-name').textContent = safe;
+    }
+  })();
+
+  // Boot-sequence terminal animation — the page's signature moment
+  const bootLines = [
+    { html: '<span class="ok">[OK]</span> Authenticating operative session<span class="dim">...</span>', delay: 150 },
+    { html: '<span class="ok">[OK]</span> Loading focus contract & strike history<span class="dim">...</span>', delay: 550 },
+    { html: '<span class="ok">[OK]</span> Syncing streak + XP ledger<span class="dim">...</span>', delay: 950 },
+    { html: '<span class="ok">[OK]</span> Distraction monitor armed<span class="dim">...</span>', delay: 1350 },
+    { html: 'Shackle AI is ready for you.', delay: 1750 }
+  ];
+  const bootBody = document.getElementById('boot-body');
+  bootLines.forEach((line) => {
+    const el = document.createElement('div');
+    el.className = 'boot-line';
+    el.innerHTML = line.html + (line === bootLines[bootLines.length - 1] ? ' <span class="boot-cursor"></span>' : '');
+    bootBody.appendChild(el);
+    setTimeout(() => el.classList.add('show'), line.delay);
+  });
+</script>
+
+</body>
+</html>

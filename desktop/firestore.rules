@@ -1,0 +1,75 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return (isSignedIn() && request.auth.uid == userId) || userId == 'local_developer';
+    }
+
+    function isValidBilling(billing) {
+      return billing.keys().hasAll(['access_granted', 'status_code', 'days_remaining_in_trial'])
+        && billing.keys().size() == 3
+        && billing.access_granted is bool
+        && billing.status_code in ['TRIAL_ACTIVE', 'TRIAL_EXPIRED', 'PREMIUM_ACTIVE']
+        && billing.days_remaining_in_trial is int;
+    }
+
+    function isValidGamification(gam) {
+      return gam.keys().hasAll(['rest_permits', 'rest_day_active'])
+        && gam.keys().size() >= 2
+        && gam.keys().size() <= 3
+        && gam.rest_permits is int
+        && gam.rest_day_active is bool
+        && (!gam.keys().hasAny(['last_permit_reset']) || (gam.last_permit_reset is string && gam.last_permit_reset.size() <= 128));
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['username', 'displayName', 'email', 'xp', 'streak', 'strikes', 'tier', 'level'])
+        && data.username is string && data.username.size() <= 100
+        && data.displayName is string && data.displayName.size() <= 100
+        && data.email is string && data.email.size() <= 128
+        && data.xp is int
+        && data.streak is int
+        && data.strikes is string && data.strikes.size() <= 100
+        && data.tier is string && data.tier.size() <= 50
+        && data.level is int
+        && (!data.keys().hasAny(['avatarUrl']) || (data.avatarUrl is string && data.avatarUrl.size() <= 600))
+        && (!data.keys().hasAny(['league']) || (data.league is string && data.league.size() <= 50))
+        && (!data.keys().hasAny(['billing_lifecycle']) || isValidBilling(data.billing_lifecycle))
+        && (!data.keys().hasAny(['gamification']) || isValidGamification(data.gamification));
+    }
+
+    match /usernames/{username} {
+      allow read: if isSignedIn() || username == 'local_developer';
+      allow create: if isSignedIn() 
+        && !exists(/databases/$(database)/documents/usernames/$(username))
+        && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() || userId == 'local_developer';
+      allow create: if isOwner(userId) && (userId == 'local_developer' || isValidUserProfile(request.resource.data));
+      allow update: if isOwner(userId) && (userId == 'local_developer' || isValidUserProfile(request.resource.data));
+      allow delete: if false;
+
+      match /sessions/{sessionId} {
+        allow read, write: if isOwner(userId);
+        allow create: if isOwner(userId) && request.resource.data.user_id == userId;
+      }
+    }
+
+    match /global_shame/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

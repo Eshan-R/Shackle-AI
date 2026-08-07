@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shackle AI — Terms of Service</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root, html[data-theme="light"] {
+    --ink: #f2ede1;
+    --surface: #e9e2cf;
+    --rule: #d9d0b8;
+    --accent: #c23a2f;
+    --accent-dim: rgba(194,58,47,0.10);
+    --text: #23211b;
+    --text-2: #55503f;
+    --muted: #8a8371;
+    --ghost: rgba(0,0,0,0.05);
+  }
+  html[data-theme="dark"] {
+    --ink: #0b0d10;
+    --surface: #14171b;
+    --rule: #262a2f;
+    --accent: #e0453a;
+    --accent-dim: rgba(224,69,58,0.12);
+    --text: #d7dade;
+    --text-2: #aeb2b8;
+    --muted: #6b7178;
+    --ghost: rgba(255,255,255,0.045);
+  }
+  html, body { background: var(--ink); }
+  body {
+    color: var(--text-2);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    transition: background 0.2s, color 0.2s;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .frame { display: flex; min-height: 100vh; }
+
+  .rail {
+    width: 232px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--rule);
+    padding: 32px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .rail-mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .rail-tabs { display: flex; flex-direction: column; gap: 2px; }
+  .tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 10px 10px;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+  }
+  .tab.is-active {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-left: 2px solid var(--accent);
+  }
+  .stamp {
+    align-self: flex-start;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-align: center;
+    padding: 10px 14px;
+    transform: rotate(-4deg);
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+  .theme-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: left;
+    text-transform: uppercase;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .meta dt { color: var(--muted); letter-spacing: 1.5px; margin-bottom: 3px; }
+  .meta dd { color: var(--text-2); margin-bottom: 14px; letter-spacing: 0.5px; }
+
+  .doc {
+    flex: 1;
+    padding: 56px clamp(24px, 6vw, 88px) 80px;
+    max-width: 880px;
+  }
+  .doc-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .doc-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 44px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause {
+    position: relative;
+    padding: 30px 0 30px 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause:last-of-type { border-bottom: none; }
+  .clause-num {
+    position: absolute;
+    top: 22px;
+    right: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 54px;
+    color: var(--ghost);
+    line-height: 1;
+    user-select: none;
+  }
+  .clause h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 14px;
+    max-width: 80%;
+  }
+  .clause p { font-size: 14.5px; color: var(--text-2); margin-bottom: 14px; max-width: 78ch; }
+  .clause strong { color: var(--text); }
+
+  .doc-footer {
+    margin-top: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 760px) {
+    .frame { flex-direction: column; }
+    .rail {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      overflow-x: auto;
+      gap: 16px;
+    }
+    .rail-tabs { flex-direction: row; }
+    .meta { display: none; }
+    .stamp { transform: none; padding: 6px 10px; }
+    .theme-toggle { white-space: nowrap; }
+    .doc { padding: 36px 22px 60px; }
+    .clause-num { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="rail">
+    <div class="rail-mark">⛓ SHACKLE AI</div>
+    <nav class="rail-tabs">
+      <a class="tab" href="/privacy-policy">PRIVACY</a>
+      <a class="tab is-active" href="/terms">TERMS</a>
+      <a class="tab" href="/refund-policy">REFUND</a>
+      <a class="tab" href="/roadmap">ROADMAP</a>
+      <a class="tab" href="/downloads">DOWNLOADS</a>
+    </nav>
+    <div class="stamp">BINDING<br>JUL 10 2026</div>
+    <dl class="meta">
+      <dt>Doc</dt><dd>TOS-2.4.0</dd>
+      <dt>Status</dt><dd>Active</dd>
+      <dt>Scope</dt><dd>Desktop + Cloud</dd>
+    </dl>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  </aside>
+
+  <main class="doc">
+    <div class="doc-eyebrow">Governance Document</div>
+    <h1>Terms of Service</h1>
+    <div class="doc-meta">LAST MODIFIED: JULY 10, 2026 · SERVICE PROTOCOL RULESET</div>
+
+    <p style="max-width:78ch; margin-bottom:34px;">By installing or interacting with the Shackle AI platform, desktop client applications, or cloud synchronization gateways, you explicitly agree to these binding rules of engagement.</p>
+
+    <section class="clause">
+      <span class="clause-num">01</span>
+      <h2>Enforcement Architecture &amp; Accountabilities</h2>
+      <p>Shackle AI uses persistent local system processes designed to restrict application access and task execution during active study blocks. You understand and authorize the desktop framework to intercept background process pools and apply localized environment blocks when study limits are breached.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">02</span>
+      <h2>Gamification, Leaderboards, &amp; Public Exposure</h2>
+      <p>The application relies on gamified psychological containment mechanisms, including a public listing for platform infractions known as the "Hall of Frauds." You acknowledge that structural session records (including public username indices, logs of unapproved app interaction, and automated AI evaluations) are transmitted directly to the global public feed unless Ghost Mode configurations are toggled on your premium profile.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">03</span>
+      <h2>Subscription Commitments &amp; Level Mechanics</h2>
+      <p>Access to advanced configuration parameters—such as custom voice template replication, leaderboard invisibility, or emergency bailout mechanisms—requires an active premium service tier priced at $9.99 per month. Progression tiers, target experience indexes (XP), and specific feature rules are governed via the native Fibonacci progression array built inside the runtime client environment.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">04</span>
+      <h2>System Safety Disclaimer</h2>
+      <p>Shackle AI provides focus restriction scripts on an "as-is" basis. While our systems are engineered for stability, Shackle AI is not responsible for unsaved work, forced script closures, or background process disruption caused by active lock enforcement routines.</p>
+    </section>
+
+    <div class="doc-footer">© 2026 SHACKLE AI · ALL ARCHITECTURAL UTILIZATION RIGHTS ARE SUBJECT TO IMMEDIATE TERMINATION UPON VIOLATION OF SYSTEM SAFETY GUIDELINES.</div>
+  </main>
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+</script>
+</body>
+</html>

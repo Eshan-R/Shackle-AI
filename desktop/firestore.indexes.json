@@ -1,0 +1,12 @@
+{
+  "indexes": [
+    {
+      "collectionId": "users",
+      "fields": [
+        { "fieldPath": "league_tier", "order": "ASCENDING" },
+        { "fieldPath": "xp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

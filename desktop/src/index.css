@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-primary-base: #0f172a;
+  --color-accent-base: #2563eb;
+}
+
+/* Reset and basic scrollbar styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.2) transparent;
+}
+
+body {
+  background-color: #f8fafc; /* Slate-50 */
+  color: #0f172a; /* Slate-900 */
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Glassmorphism custom effects */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 0.3s ease, border 0.3s ease;
+}
+
+.glass-panel-dark {
+  background: rgba(28, 13, 66, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-panel,
+[data-theme='dark'] .glass-panel,
+#shackle-app-root.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.75) !important; /* Deep Slate translucent core protection */
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Flip clock animation helper elements */
+.flip-card {
+  perspective: 400px;
+}
+
+@keyframes gradient-glow-pulse {
+  0%, 100% {
+    transform: scale(1) translate(-50%, -50%);
+    opacity: 0.15;
+    filter: blur(80px);
+  }
+  33% {
+    transform: scale(1.15) translate(-48%, -52%);
+    opacity: 0.28;
+    filter: blur(95px);
+  }
+  66% {
+    transform: scale(0.9) translate(-53%, -47%);
+    opacity: 0.22;
+    filter: blur(75px);
+  }
+}
+
+.animate-gradient-pulse {
+  animation: gradient-glow-pulse 8s ease-in-out infinite;
+}
+
+/* Custom Toggle Switch Track overrides for high contrast and pristine dark mode compatibility */
+.toggle-switch-large,
+.toggle-switch-small {
+  background-color: rgb(226, 232, 240) !important; /* light mode unchecked fallback */
+  border: 1px solid rgb(203, 213, 225) !important;
+}
+
+/* Ensure unchecked styling in dark mode or forced-dark */
+#shackle-app-root.dark .toggle-switch-large,
+#shackle-app-root.dark .toggle-switch-small {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure checked styling overrides unchecked look */
+.peer:checked ~ .toggle-switch-large,
+.peer:checked + .toggle-switch-large,
+.peer:checked ~ .toggle-switch-small,
+.peer:checked + .toggle-switch-small {
+  background-color: var(--theme-accent, #2563eb) !important;
+  border-color: var(--theme-accent, #2563eb) !important;
+}

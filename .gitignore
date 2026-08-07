@@ -1,0 +1,48 @@
+# ============================================================
+# Shackle AI — .gitignore
+# ============================================================
+
+# Environment secrets & Service Accounts — NEVER commit real credentials
+.env
+.env.local
+.env.production
+.env.development
+*.env
+!*.env.example
+**/firebase-service-account*.json
+backend/config/*.json
+config/*.json
+
+# Python & virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+*.spec.bak
+.venv/
+venv/
+env/
+
+# PyInstaller output
+*.exe
+*.app
+
+# Node / Frontend build outputs
+node_modules/
+desktop/dist/
+desktop/server.cjs
+desktop/server.cjs.map
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+

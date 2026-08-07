@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shackle AI — Privacy Policy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
+</script>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root, html[data-theme="light"] {
+    --ink: #f2ede1;
+    --surface: #e9e2cf;
+    --rule: #d9d0b8;
+    --accent: #2f6fb3;
+    --accent-dim: rgba(47,111,179,0.10);
+    --text: #23211b;
+    --text-2: #55503f;
+    --muted: #8a8371;
+    --ghost: rgba(0,0,0,0.05);
+    --card-fff: #1c1a15;
+  }
+  html[data-theme="dark"] {
+    --ink: #0b0d10;
+    --surface: #14171b;
+    --rule: #262a2f;
+    --accent: #4f8fd6;
+    --accent-dim: rgba(79,143,214,0.12);
+    --text: #d7dade;
+    --text-2: #aeb2b8;
+    --muted: #6b7178;
+    --ghost: rgba(255,255,255,0.045);
+    --card-fff: #ffffff;
+  }
+  html, body { background: var(--ink); }
+  body {
+    color: var(--text-2);
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+    transition: background 0.2s, color 0.2s;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  .frame { display: flex; min-height: 100vh; }
+
+  .rail {
+    width: 232px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--rule);
+    padding: 32px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .rail-mark {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .rail-tabs { display: flex; flex-direction: column; gap: 2px; }
+  .tab {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    padding: 10px 10px;
+    color: var(--muted);
+    border-left: 2px solid transparent;
+  }
+  .tab.is-active {
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-left: 2px solid var(--accent);
+  }
+  .stamp {
+    align-self: flex-start;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-align: center;
+    padding: 10px 14px;
+    transform: rotate(-4deg);
+    line-height: 1.6;
+    opacity: 0.9;
+  }
+  .theme-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-2);
+    background: transparent;
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    cursor: pointer;
+    text-align: left;
+    text-transform: uppercase;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .meta { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; }
+  .meta dt { color: var(--muted); letter-spacing: 1.5px; margin-bottom: 3px; }
+  .meta dd { color: var(--text-2); margin-bottom: 14px; letter-spacing: 0.5px; }
+
+  .doc {
+    flex: 1;
+    padding: 56px clamp(24px, 6vw, 88px) 80px;
+    max-width: 880px;
+  }
+  .doc-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(26px, 4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .doc-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 44px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause {
+    position: relative;
+    padding: 30px 0 30px 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .clause:last-of-type { border-bottom: none; }
+  .clause-num {
+    position: absolute;
+    top: 22px;
+    right: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 54px;
+    color: var(--ghost);
+    line-height: 1;
+    user-select: none;
+  }
+  .clause h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 14px;
+    max-width: 80%;
+  }
+  .clause p { font-size: 14.5px; color: var(--text-2); margin-bottom: 14px; max-width: 78ch; }
+  .clause ul { margin: 0 0 6px 20px; max-width: 78ch; }
+  .clause li { font-size: 14.5px; color: var(--text-2); margin-bottom: 10px; }
+  .clause strong { color: var(--text); }
+
+  .doc-footer {
+    margin-top: 40px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  @media (max-width: 760px) {
+    .frame { flex-direction: column; }
+    .rail {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 20px;
+      overflow-x: auto;
+      gap: 16px;
+    }
+    .rail-tabs { flex-direction: row; }
+    .meta { display: none; }
+    .stamp { transform: none; padding: 6px 10px; }
+    .theme-toggle { white-space: nowrap; }
+    .doc { padding: 36px 22px 60px; }
+    .clause-num { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <aside class="rail">
+    <div class="rail-mark">⛓ SHACKLE AI</div>
+    <nav class="rail-tabs">
+      <a class="tab is-active" href="/privacy-policy">PRIVACY</a>
+      <a class="tab" href="/terms">TERMS</a>
+      <a class="tab" href="/refund-policy">REFUND</a>
+      <a class="tab" href="/roadmap">ROADMAP</a>
+      <a class="tab" href="/downloads">DOWNLOADS</a>
+    </nav>
+    <div class="stamp">CERTIFIED<br>JUL 10 2026</div>
+    <dl class="meta">
+      <dt>Doc</dt><dd>PRV-2.4.0</dd>
+      <dt>Status</dt><dd>Active</dd>
+      <dt>Scope</dt><dd>Desktop + Cloud</dd>
+    </dl>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  </aside>
+
+  <main class="doc">
+    <div class="doc-eyebrow">System Document</div>
+    <h1>Privacy Policy</h1>
+    <div class="doc-meta">EFFECTIVE DATE: JULY 10, 2026 · SYSTEM VERSION 2.4.0</div>
+
+    <p style="max-width:78ch; margin-bottom:34px;">Shackle AI operates an autonomous anti-procrastination engine utilizing deep-level window hook infrastructure and local daemon enforcement to optimize user productivity. This document details how data is managed between your local machine environment and our systems.</p>
+
+    <section class="clause">
+      <span class="clause-num">01</span>
+      <h2>Local System Monitoring &amp; Telemetry</h2>
+      <p>To enforce active locks and strike tracking, Shackle AI monitors desktop environmental telemetry locally:</p>
+      <ul>
+        <li><strong>Active Application Hooking:</strong> Active window text and process metadata are parsed locally via deep IPC bindings to discover focus state violations.</li>
+        <li><strong>Voice Synthesis Data:</strong> Custom audio templates uploaded for Level 3 voice cloning are encoded locally before transmission to processing nodes. This data is utilized solely for your personalized text-to-speech feedback pipeline.</li>
+      </ul>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">02</span>
+      <h2>Public Leaderboard Data &amp; "Hall of Frauds"</h2>
+      <p>By using the platform, specified non-sensitive session violations (your public username, infraction timestamp, violation type, and generated AI roasts) are synchronized to the public database ledger for display on the public leaderboard feed. Users can opt out of this public visibility by enabling <strong>Ghost Mode</strong> inside the Premium tier interface.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">03</span>
+      <h2>Cloud Synchronization &amp; Third-Party Gateways</h2>
+      <p>When authenticated with a verified account, focus indices, cumulative XP levels, and strike tracking statistics are backed up securely to our remote cloud database. Payment processing operations are handled externally by secured partners (Razorpay), and no raw payment account credentials are stored on Shackle AI servers.</p>
+    </section>
+
+    <section class="clause">
+      <span class="clause-num">04</span>
+      <h2>Data Retention &amp; Deletion</h2>
+      <p>Users maintain complete command over their historical telemetry logs. Executing an account purge via the Profile Manager interface triggers immediate, irrevocable deletion of all remote cloud records, local tracking registries, and active session history archives.</p>
+    </section>
+
+    <div class="doc-footer">© 2026 SHACKLE AI · ALL TELEMETRY AND ENFORCEMENT INDICES GOVERNED UNDER STANDARD CRYPTOGRAPHIC PRIVACY CONTROLS.</div>
+  </main>
+</div>
+
+<script>
+  function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('shackle-theme', next);
+    updateToggleLabel(next);
+  }
+  function updateToggleLabel(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  }
+  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+</script>
+</body>
+</html>
+
