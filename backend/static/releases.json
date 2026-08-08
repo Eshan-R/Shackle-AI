@@ -1,8 +1,8 @@
 {
   "releases": [
     {
-      "version": "1.2.0",
-      "date": "2026-07-15",
+      "version": "1.0.0",
+      "date": "2026-08-08",
       "channel": "stable",
       "latest": true,
       "changelog": [
@@ -16,19 +16,7 @@
           "platform": "windows",
           "label": "Windows 10 / 11 (64-bit)",
           "url": "https://github.com/your-org/shackle-ai/releases/download/v1.2.0/ShackleAI-Setup-1.2.0.exe",
-          "size": "142 MB"
-        },
-        {
-          "platform": "mac",
-          "label": "macOS 12+ (Apple Silicon & Intel)",
-          "url": "https://github.com/your-org/shackle-ai/releases/download/v1.2.0/ShackleAI-1.2.0.dmg",
-          "size": "138 MB"
-        },
-        {
-          "platform": "linux",
-          "label": "Linux (AppImage, x86_64)",
-          "url": "https://github.com/your-org/shackle-ai/releases/download/v1.2.0/ShackleAI-1.2.0.AppImage",
-          "size": "151 MB"
+          "size": "129 MB"
         }
       ]
     },

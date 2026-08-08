@@ -8,7 +8,17 @@ import psutil
 import logging
 from typing import List, Dict, Any
 
-logger = logging.getLogger(__name__)
+try:
+    from logger_config import get_logger
+    logger = get_logger("OSLocker")
+except ImportError:
+    try:
+        from ..logger_config import get_logger
+        logger = get_logger("OSLocker")
+    except ImportError:
+        logger = logging.getLogger("OSLocker")
+
+from typing import List, Dict, Any
 
 
 class OSLocker:
@@ -102,11 +112,11 @@ class OSLocker:
         if process_name not in self.blacklist:
             self.blacklist.append(process_name)
             logger.info(f"Added to blacklist: {process_name}")
-            print(f"[OSLocker CURRENT BLACKLIST]: {self.blacklist}")
+            logger.info(f"[OSLocker CURRENT BLACKLIST]: {self.blacklist}")
 
     def remove_from_blacklist(self, process_name: str):
         """Removes a process name from the kill list at runtime."""
         if process_name in self.blacklist:
             self.blacklist.remove(process_name)
             logger.info(f"Removed from blacklist: {process_name}")
-            print(f"[OSLocker CURRENT BLACKLIST]: {self.blacklist}")
+            logger.info(f"[OSLocker CURRENT BLACKLIST]: {self.blacklist}")

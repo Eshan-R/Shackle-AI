@@ -7,23 +7,101 @@ import os
 import sys
 import threading
 import queue
+import logging
 from collections import deque
 from typing import Dict, Any
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
+try:
+    from logger_config import get_logger, write_crash_fallback
+    logger = get_logger("VisionEngine")
+except Exception as _e:
+    def write_crash_fallback(msg: str):
+        try:
+            log_dir = os.path.expanduser("~/Documents/ShackleAI/logs")
+            os.makedirs(log_dir, exist_ok=True)
+            ts = time.strftime("%Y-%m-%d %H:%M:%S")
+            with open(os.path.join(log_dir, "crash_fallback.txt"), "a", encoding="utf-8") as f:
+                f.write(f"[{ts}] [CRASH_FALLBACK] {msg}\n")
+        except Exception:
+            pass
+    write_crash_fallback(f"Failed loading logger_config in vision.py: {_e}")
+    logger = logging.getLogger("VisionEngine")
+
+
 class BackgroundCameraStream:
     """Polled frame buffering class to prevent OpenCV main thread synchronization locks."""
     def __init__(self, src=0):
-        self.cap = cv2.VideoCapture(src)
+        self.cap = None
         self.frame_queue = queue.Queue(maxsize=2)
         self.stopped = False
+        self.backend_used = "UNKNOWN"
+        self.error_mode = None  # None | 'permission_denied' | 'no_camera_found' | 'device_busy'
+        self.error_message = ""
+
+        # Check process elevation context on Windows
+        is_elevated = False
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                is_elevated = bool(ctypes.windll.shell32.IsUserAnAdmin())
+            except Exception:
+                pass
+
+        logger.info(f"[CAMERA DIAGNOSTIC] Initializing VideoCapture({src}). Elevated/Admin process context: {is_elevated}")
+
+        # Primary backend: default OpenCV backend (MSMF on Windows)
+        try:
+            self.cap = cv2.VideoCapture(src)
+            backend_name = self.cap.getBackendName() if hasattr(self.cap, "getBackendName") else "DEFAULT"
+            logger.info(f"[CAMERA DIAGNOSTIC] Primary VideoCapture({src}) initialized backend: {backend_name}. cap.isOpened()={self.cap.isOpened()}")
+            self.backend_used = backend_name
+        except Exception as e:
+            logger.warning(f"[CAMERA DIAGNOSTIC] Primary VideoCapture({src}) exception: {e}")
+
+        # Fallback backend: DirectShow on Windows if primary unopened
+        if (self.cap is None or not self.cap.isOpened()) and sys.platform == "win32":
+            logger.info("[CAMERA DIAGNOSTIC] Primary VideoCapture unopened. Attempting DirectShow fallback: cv2.VideoCapture(src, cv2.CAP_DSHOW)")
+            try:
+                if self.cap:
+                    self.cap.release()
+                self.cap = cv2.VideoCapture(src, cv2.CAP_DSHOW)
+                backend_name = self.cap.getBackendName() if hasattr(self.cap, "getBackendName") else "CAP_DSHOW"
+                logger.info(f"[CAMERA DIAGNOSTIC] DirectShow fallback cap.isOpened()={self.cap.isOpened()}")
+                self.backend_used = backend_name
+            except Exception as e:
+                logger.warning(f"[CAMERA DIAGNOSTIC] DirectShow fallback VideoCapture({src}) exception: {e}")
+
+        # Diagnostic categorization
+        if self.cap is None or not self.cap.isOpened():
+            if is_elevated:
+                self.error_mode = "permission_denied"
+                self.error_message = "Windows Camera Privacy Policy or MSMF security context blocked elevated camera access. Grant camera access to desktop apps or run without Admin elevation."
+                logger.error(f"[CAMERA ERROR] {self.error_message}")
+            else:
+                self.error_mode = "no_camera_found"
+                self.error_message = f"No active camera device found on VideoCapture({src}). Ensure webcam is plugged in."
+                logger.error(f"[CAMERA ERROR] {self.error_message}")
+        else:
+            # Test-read 1 frame
+            ret, test_frame = self.cap.read()
+            if not ret or test_frame is None:
+                if is_elevated:
+                    self.error_mode = "permission_denied"
+                    self.error_message = "Camera device opened but read() returned no frame (Elevated Windows Privacy Block / MSMF Sandbox Lock)."
+                    logger.error(f"[CAMERA ERROR] {self.error_message}")
+                else:
+                    self.error_mode = "device_busy"
+                    self.error_message = "Camera opened but read() returned no frame. Another application (Zoom/Teams/Discord) may be using the camera."
+                    logger.warning(f"[CAMERA WARNING] {self.error_message}")
+
         self.thread = threading.Thread(target=self._capture_loop, daemon=True)
         self.thread.start()
 
     def _capture_loop(self):
         while not self.stopped:
-            if not self.cap.isOpened():
+            if not self.cap or not self.cap.isOpened():
                 time.sleep(0.1)
                 continue
             success, frame = self.cap.read()
@@ -44,7 +122,7 @@ class BackgroundCameraStream:
             return None
 
     def is_opened(self):
-        return self.cap.isOpened()
+        return self.cap is not None and self.cap.isOpened()
 
     def release(self):
         self.stopped = True
@@ -106,13 +184,16 @@ class VisionEngine:
             # Spin up threaded stream worker
             self.stream = BackgroundCameraStream(src=0)
             if not self.stream.is_opened():
-                raise RuntimeError("OS failed to open a valid stream on VideoCapture(0).")
+                err_msg = getattr(self.stream, 'error_message', 'OS failed to open a valid stream on VideoCapture(0).')
+                raise RuntimeError(err_msg)
 
+            # CRITICAL REGRESSION NOTICE: Both FaceLandmarkerOptions and PoseLandmarkerOptions MUST use
+            # vision.RunningMode.VIDEO (NOT python.RunningMode.VIDEO — python module has no RunningMode attribute).
             face_options = vision.FaceLandmarkerOptions(
                 base_options=python.BaseOptions(model_asset_path=face_model_path),
                 running_mode=vision.RunningMode.VIDEO,
                 output_facial_transformation_matrixes=True,
-                output_face_blendshapes=True  # NEW: needed for smile/jaw/cheek expression scores
+                output_face_blendshapes=True  # needed for smile/jaw/cheek expression scores
             )
             self.face_detector = vision.FaceLandmarker.create_from_options(face_options)
 
@@ -122,9 +203,12 @@ class VisionEngine:
                 output_segmentation_masks=False
             )
             self.pose_detector = vision.PoseLandmarker.create_from_options(pose_options)
+            logger.info("[VISION ENGINE] MediaPipe Face & Pose Landmarker pipelines initialized successfully.")
 
         except Exception as e:
-            print(f"[VISION CRITICAL] Failed initializing pipeline: {e}")
+            err_details = f"[VISION CRITICAL] Failed initializing pipeline: {e}"
+            logger.error(err_details)
+            write_crash_fallback(err_details)
             self.release()
             raise e
 
@@ -147,6 +231,14 @@ class VisionEngine:
 
         frame = self.stream.read_frame()
         if frame is None:
+            if not self.stream.is_opened():
+                err_mode = getattr(self.stream, 'error_mode', 'uninitialized')
+                err_msg = getattr(self.stream, 'error_message', 'Camera hardware uninitialized or camera access blocked.')
+                return {
+                    "status": "error",
+                    "error_mode": err_mode,
+                    "message": err_msg
+                }
             return {"status": "processing", "message": "Awaiting fresh buffer payload..."}
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -160,7 +252,7 @@ class VisionEngine:
                 "ambient_light": float(average_brightness)
             }
             if self.debug:
-                print(f"[VISION DEBUG] face_present=False, pose_present=False, status={res['status']}, message={res['message']}")
+                logger.debug(f"[VISION DEBUG] face_present=False, pose_present=False, status={res['status']}, message={res['message']}")
             return res
 
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -247,7 +339,7 @@ class VisionEngine:
                     is_phone_in_hand = wrist_above_hip and (left_extended or right_extended) and wrist_above_elbow
 
             except Exception as e:
-                print(f"[VISION WARNING] Pose landmark distance calc failed: {e}")
+                logger.warning(f"[VISION WARNING] Pose landmark distance calc failed: {e}")
 
         # Temporal smoothing: append current frame result, then check majority
         self._phone_near_face_window.append(is_phone_near_face)
@@ -337,7 +429,7 @@ class VisionEngine:
                     "duration": time_occluded
                 }
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
         else:
             self._face_occluded_start_time = None
@@ -353,7 +445,7 @@ class VisionEngine:
 
                 is_giggling_raw = smile_score > 0.65 and (jaw_open_score > 0.20 or cheek_squint > 0.40)
             except Exception as e:
-                print(f"[VISION WARNING] Blendshape smile/giggle extraction failed: {e}")
+                logger.warning(f"[VISION WARNING] Blendshape smile/giggle extraction failed: {e}")
 
         self._giggle_window.append(is_giggling_raw)
         _giggle_len = len(self._giggle_window)
@@ -378,7 +470,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
             if is_giggling_smoothed:
                 if self._distraction_start_time is None or self._last_distraction_type != "giggling":
@@ -392,7 +484,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
             if pose_present or face_present:
                 # User is present — reset distraction state
@@ -404,7 +496,7 @@ class VisionEngine:
                 res = {"status": "compliant", "message": "Book Mode active. Posture verified."}
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
             # Neither pose nor face detected in Book Mode
             if self._book_mode_no_landmark_start is None:
@@ -418,7 +510,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
         # ── STANDARD MODE ──
@@ -437,7 +529,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
             if is_giggling_smoothed:
@@ -452,7 +544,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
             if is_gaze_away_smoothed:
@@ -467,7 +559,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
             # Head pose analysis
@@ -480,7 +572,7 @@ class VisionEngine:
                     pitch = np.arcsin(-R[1, 2]) * 180 / np.pi
                     yaw   = np.arctan2(R[0, 2], R[2, 2]) * 180 / np.pi
                 except Exception as e:
-                    print(f"[VISION WARNING] Head pose extraction failed: {e}")
+                    logger.warning(f"[VISION WARNING] Head pose extraction failed: {e}")
 
             self._yaw_window.append(yaw)
             self._pitch_window.append(pitch)
@@ -501,7 +593,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
             # Pitch threshold calibration
@@ -517,7 +609,7 @@ class VisionEngine:
                 }
                 res["is_far_user"] = is_far_user
                 if self.debug:
-                    print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                    logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
                 return res
 
             # COMPLIANT: Reset all distraction tracking
@@ -534,7 +626,7 @@ class VisionEngine:
                 res = {"status": "compliant", "message": "Upward screen focus verified."}
             res["is_far_user"] = is_far_user
             if self.debug:
-                print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
             return res
 
         # Face not present but pose present — looking away
@@ -552,7 +644,7 @@ class VisionEngine:
             }
             res["is_far_user"] = is_far_user
             if self.debug:
-                print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+                logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
             return res
 
         # Neither face nor pose — truly absent
@@ -569,7 +661,7 @@ class VisionEngine:
             }
         res["is_far_user"] = is_far_user  # uses self._last_is_far_user (cached from last pose frame)
         if self.debug:
-            print(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
+            logger.debug(f"[VISION DEBUG] face_present={face_present}, pose_present={pose_present}, status={res['status']}, message={res['message']}")
         return res
 
     def set_book_mode(self, active: bool):
@@ -583,10 +675,10 @@ class VisionEngine:
         self._pitch_window.clear()
         self._distraction_start_time = None
         self._last_distraction_type = None
-        print(f"[VISION] Book Mode active state set to: {self.is_book_mode_active}")
+        logger.info(f"[VISION] Book Mode active state set to: {self.is_book_mode_active}")
 
     def release(self):
-        print("[SYSTEM] Releasing camera hardware layers...")
+        logger.info("[SYSTEM] Releasing camera hardware layers...")
         if self.stream:
             self.stream.release()
             self.stream = None
@@ -594,13 +686,13 @@ class VisionEngine:
             try:
                 self.face_detector.close()
             except RuntimeError as e:
-                print(f"[SYSTEM] Face detector already shut down: {e}")
+                logger.warning(f"[SYSTEM] Face detector already shut down: {e}")
             self.face_detector = None
         if self.pose_detector:
             try:
                 self.pose_detector.close()
             except RuntimeError as e:
-                print(f"[SYSTEM] Pose detector already shut down: {e}")
+                logger.warning(f"[SYSTEM] Pose detector already shut down: {e}")
             self.pose_detector = None
 
 
@@ -609,17 +701,17 @@ class HardwareObjectError(Exception):
 
 
 if __name__ == "__main__":
-    print("Initializing Shackle AI Threaded Vision Engine...")
+    logger.info("Initializing Shackle AI Threaded Vision Engine...")
     try:
         tracker = VisionEngine()
         while True:
             state = tracker.analyze_frame()
             if state['status'] != "processing":
-                print(f"Current State: {state['status'].upper()} | {state.get('message', '')}")
+                logger.info(f"Current State: {state['status'].upper()} | {state.get('message', '')}")
             time.sleep(0.1)
     except KeyboardInterrupt:
         if 'tracker' in locals():
             tracker.release()
-        print("Vision Engine safe exit executed.")
+        logger.info("Vision Engine safe exit executed.")
     except Exception as e:
-        print(f"Engine failure execution abort: {e}")
+        logger.error(f"Engine failure execution abort: {e}")

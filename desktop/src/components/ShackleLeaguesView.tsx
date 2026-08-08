@@ -339,11 +339,6 @@ export default function ShackleLeaguesView({ profile, onUpdateProfile, displaySe
       try {
         const rows = await pywebviewBridge.getLeagueUsers(tier);
         if (!Array.isArray(rows)) return [];
-        // LeagueUser (rank/username/displayName/xp/isCurrentUser) doesn't carry
-        // streak/strikes/avatar — those are display-only extras this view adds.
-        // The current user's own row is always injected separately below (with
-        // their real streak/strikes from `profile`), so exclude any self-row here
-        // to avoid a duplicate entry.
         const parseStrikesValue = (val: any): number => {
           if (typeof val === 'number') return val;
           if (!val || String(val).toLowerCase() === 'none') return 0;
@@ -351,8 +346,16 @@ export default function ShackleLeaguesView({ profile, onUpdateProfile, displaySe
           return match ? parseInt(match[0], 10) : 0;
         };
 
+        const placeholderUsernames = new Set(['guest', 'guest_user', '']);
+        const placeholderDisplayNames = new Set(['guest', 'guest unshackler', '']);
+        const isPlaceholderPeer = (u: any): boolean => {
+          const uname = String(u.username || '').replace(/^@/, '').toLowerCase();
+          const dname = String(u.displayName || '').toLowerCase();
+          return placeholderUsernames.has(uname) || placeholderDisplayNames.has(dname);
+        };
+
         return rows
-          .filter((u: any) => !u.isCurrentUser)
+          .filter((u: any) => !u.isCurrentUser && !isPlaceholderPeer(u))
           .map((u: any) => ({
             pos: u.rank || 0,
             username: `@${u.username}`,

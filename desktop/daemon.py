@@ -3,6 +3,7 @@ import time
 import re
 import threading
 import requests
+import logging
 import pygetwindow as gw
 from typing import List, Dict, Any
 
@@ -10,6 +11,12 @@ try:
     import winsound as _winsound
 except ImportError:
     _winsound = None
+
+try:
+    from logger_config import get_logger
+    logger = get_logger("ShackleDaemon")
+except ImportError:
+    logger = logging.getLogger("ShackleDaemon")
 
 from vision import VisionEngine
 from telemetry import TelemetryEngine
@@ -51,28 +58,28 @@ class ShackleDaemon:
         self._productive_app_distraction_threshold: float = productive_app_distraction_threshold
 
         # Initialize Vision Engine
-        print("[SYSTEM] Booting Threaded Vision Engine...")
+        logger.info("[SYSTEM] Booting Threaded Vision Engine...")
         try:
             self.vision_engine = VisionEngine()
             self.vision_initialized = True
-            print("[SYSTEM] Vision Engine initialized successfully.")
+            logger.info("[SYSTEM] Vision Engine initialized successfully.")
         except Exception as e:
-            print(f"[WARNING] Vision Engine initialization failed: {e}. Continuing without vision monitoring.")
+            logger.warning(f"[WARNING] Vision Engine initialization failed: {e}. Continuing without vision monitoring.")
             self.vision_engine = None
             self.vision_initialized = False
 
         # Initialize Telemetry Engine
-        print("[SYSTEM] Booting Lock-Free Telemetry Engine...")
+        logger.info("[SYSTEM] Booting Lock-Free Telemetry Engine...")
         try:
             self.telemetry_engine = TelemetryEngine()
             self.telemetry_initialized = True
-            print("[SYSTEM] Telemetry Engine initialized successfully.")
+            logger.info("[SYSTEM] Telemetry Engine initialized successfully.")
         except Exception as e:
-            print(f"[WARNING] Telemetry Engine initialization failed: {e}. Continuing without telemetry monitoring.")
+            logger.warning(f"[WARNING] Telemetry Engine initialization failed: {e}. Continuing without telemetry monitoring.")
             self.telemetry_engine = None
             self.telemetry_initialized = False
 
-        print("[SYSTEM] Initializing Local OS Enforcement Modules...")
+        logger.info("[SYSTEM] Initializing Local OS Enforcement Modules...")
         self.os_locker = OSLocker()
         self.break_manager = BreakManager(grace_seconds={
             "absent": 450,          # 7.5 minutes
@@ -88,6 +95,53 @@ class ShackleDaemon:
         self.light_bomb_executed = False
 
         self.is_running = False
+
+    def _run_startup_self_test(self):
+        """Runs a single consolidated diagnostic self-test at daemon startup and logs results."""
+        is_admin = False
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                is_admin = bool(ctypes.windll.shell32.IsUserAnAdmin())
+            except Exception:
+                pass
+
+        # Vision status check
+        vision_status = "FAIL (Engine Uninitialized)"
+        if self.vision_initialized and self.vision_engine:
+            if getattr(self.vision_engine, 'stream', None) and self.vision_engine.stream.is_opened():
+                vision_status = "PASS (MediaPipe Landmarker & Camera Stream Active)"
+            else:
+                err_msg = getattr(self.vision_engine.stream, 'error_message', 'Camera stream unopened') if getattr(self.vision_engine, 'stream', None) else 'No stream'
+                vision_status = f"FAIL ({err_msg})"
+
+        # Telemetry status check (allow listeners to initialize)
+        time.sleep(1.5)
+        kb_running = False
+        mouse_running = False
+        if self.telemetry_initialized and self.telemetry_engine:
+            if hasattr(self.telemetry_engine, 'keyboard_listener'):
+                kb_running = getattr(self.telemetry_engine.keyboard_listener, 'running', False)
+            if hasattr(self.telemetry_engine, 'mouse_listener'):
+                mouse_running = getattr(self.telemetry_engine.mouse_listener, 'running', False)
+
+        telemetry_status = (
+            f"PASS (Keyboard Hook: {'ACTIVE' if kb_running else 'INACTIVE'}, Mouse Hook: {'ACTIVE' if mouse_running else 'INACTIVE'})"
+            if (kb_running or mouse_running) else "FAIL (Hooks Inactive)"
+        )
+
+        test_block = (
+            "\n"
+            "============================================================\n"
+            "SHACKLE AI DAEMON SUBSYSTEM DIAGNOSTIC SELF-TEST\n"
+            "------------------------------------------------------------\n"
+            f"* Process Elevation (Admin): {'YES' if is_admin else 'NO'}\n"
+            f"* Vision Engine:            {vision_status}\n"
+            f"* Telemetry Engine:         {telemetry_status}\n"
+            f"* OS Locker Module:         READY (Blacklist items: {len(self.os_locker.blacklist)})\n"
+            "============================================================\n"
+        )
+        logger.info(test_block)
 
     def get_active_window_title(self) -> str:
         try:
@@ -198,12 +252,7 @@ class ShackleDaemon:
                         }
                     }
             elif status == "distracted":
-                # FIX: Vision already did temporal smoothing. Check if duration exceeds threshold
-                # before treating as a strike-worthy violation. This prevents flickering strikes.
                 duration = vision_state.get("duration", 0)
-
-                # Use an extended threshold when the foreground window is a productive app
-                # (IDE, terminal, etc.) — glancing at code is lower-risk than glancing at a phone.
                 active_window_lower = active_window.lower()
                 is_productive_window = any(
                     app.lower() in active_window_lower for app in self.productive_apps
@@ -247,7 +296,7 @@ class ShackleDaemon:
 
             return {"is_violation": False, "context": "User is focused and compliant."}
         except Exception as e:
-            print(f"[DAEMON ERROR] Exception in evaluate_environment: {e}")
+            logger.error(f"[DAEMON ERROR] Exception in evaluate_environment: {e}")
             return {"is_violation": False, "context": "Daemon internal error – check logs."}
 
     def play_beep(self, frequency: int = 800, duration_ms: int = 200):
@@ -255,10 +304,10 @@ class ShackleDaemon:
         try:
             if _winsound:
                 _winsound.Beep(frequency, duration_ms)
-            else:
+            elif sys.stdout is not None:
                 print("\a", end="", flush=True)
         except Exception:
-            print("\a", end="", flush=True)
+            pass
 
     def play_progressive_beep(self, elapsed_seconds: int):
         """
@@ -266,7 +315,7 @@ class ShackleDaemon:
         """
         now = time.time()
         if elapsed_seconds < 30:
-            return  # Grace period — silence
+            return
         elif 30 <= elapsed_seconds < 60:
             interval, freq, dur = 10.0, 600, 150
         elif 60 <= elapsed_seconds < 120:
@@ -280,10 +329,6 @@ class ShackleDaemon:
 
     def trigger_strike(self, violation_data: Dict[str, Any]):
         with self._strike_lock:
-            # Deduplicate rapid identical violations.
-            # Use the stable active_violation_type from telemetry as the dedup key — context strings
-            # embed a live elapsed-seconds count that changes every call, so they can never match.
-            # Fall back to the raw context string for violation types without telemetry (e.g. blacklisted apps).
             current_time = time.time()
             context = violation_data.get("context", "")
             telemetry = violation_data.get("telemetry", {})
@@ -291,7 +336,7 @@ class ShackleDaemon:
 
             if (self._last_violation_context == dedup_key and
                 current_time - self._last_violation_time < self._violation_cooldown_seconds):
-                print(f"[DAEMON] Duplicate violation suppressed (key={dedup_key!r}): {context[:60]}")
+                logger.info(f"[DAEMON] Duplicate violation suppressed (key={dedup_key!r}): {context[:60]}")
                 return
 
             self._last_violation_context = dedup_key
@@ -301,11 +346,11 @@ class ShackleDaemon:
                 return
 
             if not self.session_id:
-                print("[DAEMON] No session_id — cannot record strike. Skipping.")
+                logger.info("[DAEMON] No session_id — cannot record strike. Skipping.")
                 return
 
             self.strike_count += 1
-            print(f"\n🚨 STRIKE {self.strike_count} RECORDED: {violation_data['context']}")
+            logger.warning(f"🚨 STRIKE {self.strike_count} RECORDED: {violation_data['context']}")
 
             global _webview_window
             if _webview_window is not None:
@@ -316,12 +361,12 @@ class ShackleDaemon:
             is_process_violation = "blacklisted" in context_lower or "browsing" in context_lower
 
             if self.strike_count >= 2 and is_process_violation:
-                print("[OS_LOCKER] High infraction count. Initiating active process execution termination...")
+                logger.info("[OS_LOCKER] High infraction count. Initiating active process execution termination...")
                 purge_metrics = self.os_locker.execute_purge()
-                print(f"[OS_LOCKER] Purge Complete: {purge_metrics}")
+                logger.info(f"[OS_LOCKER] Purge Complete: {purge_metrics}")
 
             if self.strike_count >= 3 and not self.light_bomb_executed:
-                print("💀 CRITICAL: Three strike threshold reached. Moving environment into Phase 1 Lockdown!")
+                logger.warning("💀 CRITICAL: Three strike threshold reached. Moving environment into Phase 1 Lockdown!")
                 self.execute_light_bomb()
                 self.light_bomb_executed = True
 
@@ -341,7 +386,7 @@ class ShackleDaemon:
                 data = response.json()
                 infraction_id = data.get("infraction_id")
                 if not infraction_id:
-                    print("[DAEMON] No infraction_id returned, skipping roast playback.")
+                    logger.warning("[DAEMON] No infraction_id returned, skipping roast playback.")
                     return
 
                 polling_thread = threading.Thread(
@@ -351,9 +396,9 @@ class ShackleDaemon:
                 )
                 polling_thread.start()
             else:
-                print(f"[API ERROR] Failed to log strike: {response.status_code}")
+                logger.error(f"[API ERROR] Failed to log strike: {response.status_code}")
         except Exception as e:
-            print(f"[NETWORK ERROR] Backend infraction log failed or timed out: {e}")
+            logger.error(f"[NETWORK ERROR] Backend infraction log failed or timed out: {e}")
 
     def _poll_infraction_result(self, infraction_id: str):
         """Polls the infraction result endpoint every 2 seconds up to 4 attempts."""
@@ -380,41 +425,38 @@ class ShackleDaemon:
                         success = True
                         break
             except Exception as e:
-                print(f"[DAEMON WARNING] Poll attempt {attempts} failed: {e}")
+                logger.warning(f"[DAEMON WARNING] Poll attempt {attempts} failed: {e}")
 
         if not success:
-            print("[DAEMON WARNING] Roast generation timed out or failed. Falling back to canned warning.")
+            logger.warning("[DAEMON WARNING] Roast generation timed out or failed. Falling back to canned warning.")
 
-        print(f"[SHACKLE AI]: {roast_text}")
+        logger.info(f"[SHACKLE AI]: {roast_text}")
         if audio_url:
             self.stream_audio_discipline(audio_url, roast_text)
         else:
             self.show_roast_text_only(roast_text)
 
     def stream_audio_discipline(self, url: str, roast_text: str):
-        """Forwards the roast audio URL and text to the React frontend via evaluate_js.
-        The frontend renders a modal overlay and plays the audio through the
-        browser Audio API — no PowerShell / temp file required."""
+        """Forwards the roast audio URL and text to the React frontend via evaluate_js."""
         with self._audio_playback_lock:
             global _webview_window
             if _webview_window is not None:
-                # Escape single quotes in the URL and roast text to avoid JS injection issues
                 safe_url = url.replace("'", "\\'")
                 safe_roast_text = roast_text.replace("'", "\\'")
                 _webview_window.evaluate_js(f"window.playRoastAudio('{safe_url}', '{safe_roast_text}')")
-                print(f"[DAEMON] Roast audio forwarded to frontend: {url}")
+                logger.info(f"[DAEMON] Roast audio forwarded to frontend: {url}")
             else:
-                print(f"[DAEMON] No webview window available to play roast audio. URL was: {url}")
+                logger.warning(f"[DAEMON] No webview window available to play roast audio. URL was: {url}")
 
     def show_roast_text_only(self, roast_text: str):
-        """Forwards text-only roast to the React frontend via evaluate_js when TTS/audio fails or times out."""
+        """Forwards text-only roast to the React frontend via evaluate_js when TTS/audio fails."""
         global _webview_window
         if _webview_window is not None:
             safe_roast_text = roast_text.replace("'", "\\'")
             _webview_window.evaluate_js(f"window.showRoastText('{safe_roast_text}')")
-            print(f"[DAEMON] Text-only roast forwarded to frontend: {roast_text}")
+            logger.info(f"[DAEMON] Text-only roast forwarded to frontend: {roast_text}")
         else:
-            print(f"[DAEMON] No webview window available for text-only roast: {roast_text}")
+            logger.warning(f"[DAEMON] No webview window available for text-only roast: {roast_text}")
 
     def set_session_active(self, active: bool, duration_minutes: int = 45, user_id: str = None, xp_earned: int = None):
         if active and not self.session_active:
@@ -426,7 +468,7 @@ class ShackleDaemon:
 
             effective_user_id = user_id or self.user_id
             if not effective_user_id or effective_user_id == "local_developer":
-                print("[DAEMON] set_session_active(True) blocked — no authenticated user_id set yet.")
+                logger.warning("[DAEMON] set_session_active(True) blocked — no authenticated user_id set yet.")
                 self.session_active = False
                 self.session_id = ""
                 return
@@ -454,22 +496,22 @@ class ShackleDaemon:
                                 custom_blacklist = profile["blacklistedApps"]
                                 if isinstance(custom_blacklist, list):
                                     self.os_locker.blacklist = list(custom_blacklist)
-                                    print(f"[DAEMON] Loaded blacklist for '{effective_user_id}': {self.os_locker.blacklist}")
+                                    logger.info(f"[DAEMON] Loaded blacklist for '{effective_user_id}': {self.os_locker.blacklist}")
                         except Exception as e:
-                            print(f"[DAEMON] WARNING: Failed to load blacklist on session start: {e}")
+                            logger.warning(f"[DAEMON] WARNING: Failed to load blacklist on session start: {e}")
                         return
                     else:
-                        print("[DAEMON] /v1/session/start returned no session_id.")
+                        logger.warning("[DAEMON] /v1/session/start returned no session_id.")
                 elif resp.status_code == 403:
-                    print(f"[DAEMON] Backend rejected session start (penalty lockout): {resp.json().get('detail')}")
+                    logger.warning(f"[DAEMON] Backend rejected session start (penalty lockout): {resp.json().get('detail')}")
                 else:
-                    print(f"[DAEMON] /v1/session/start returned {resp.status_code}.")
+                    logger.warning(f"[DAEMON] /v1/session/start returned {resp.status_code}.")
             except Exception as e:
-                print(f"[DAEMON] /v1/session/start unreachable: {e}")
+                logger.error(f"[DAEMON] /v1/session/start unreachable: {e}")
 
             self.session_active = False
             self.session_id = ""
-            print("[DAEMON] Session start failed — no local fallback used.")
+            logger.warning("[DAEMON] Session start failed — no local fallback used.")
         elif not active and self.session_active:
             try:
                 eff_duration = duration_minutes if duration_minutes != 45 else (getattr(self, 'session_duration', 45) or 45)
@@ -485,12 +527,12 @@ class ShackleDaemon:
                     },
                     timeout=5
                 )
-                print(f"[DAEMON] Session ended via backend for ID: {self.session_id} (xp_earned={eff_xp}, duration_minutes={eff_duration})")
+                logger.info(f"[DAEMON] Session ended via backend for ID: {self.session_id} (xp_earned={eff_xp}, duration_minutes={eff_duration})")
             except Exception as e:
-                print(f"[DAEMON] /v1/session/end failed ({e}) — session closed locally only.")
+                logger.error(f"[DAEMON] /v1/session/end failed ({e}) — session closed locally only.")
             self.session_active = False
             self.session_id = ""
-            print("[DAEMON] Session deactivated.")
+            logger.info("[DAEMON] Session deactivated.")
 
     def get_daemon_status(self) -> dict:
         try:
@@ -503,7 +545,7 @@ class ShackleDaemon:
                 "grace_seconds_left": status.get("remaining_seconds") if status.get("is_absent") else None
             }
         except Exception as e:
-            print(f"[DAEMON] get_daemon_status() error: {e}")
+            logger.error(f"[DAEMON] get_daemon_status() error: {e}")
             return {
                 "session_active": self.session_active,
                 "strike_count": self.strike_count,
@@ -517,13 +559,13 @@ class ShackleDaemon:
             effective_user_id = user_id or self.user_id
             self.set_session_active(True, duration_minutes=duration_minutes, user_id=effective_user_id)
             if self.session_active and self.session_id:
-                print(f"[DAEMON] lock_apps() — session enforcement active ({duration_minutes}m). ID: {self.session_id}")
+                logger.info(f"[DAEMON] lock_apps() — session enforcement active ({duration_minutes}m). ID: {self.session_id}")
                 return self.session_id
             else:
-                print("[DAEMON] lock_apps() — failed to start backend session. Returning empty.")
+                logger.warning("[DAEMON] lock_apps() — failed to start backend session. Returning empty.")
                 return ""
         except Exception as e:
-            print(f"[DAEMON] lock_apps() error: {e}")
+            logger.error(f"[DAEMON] lock_apps() error: {e}")
             return ""
 
     def get_active_session_id(self) -> str:
@@ -532,10 +574,10 @@ class ShackleDaemon:
     def unlock_apps(self) -> bool:
         try:
             self.set_session_active(False)
-            print("[DAEMON] unlock_apps() called — session enforcement deactivated.")
+            logger.info("[DAEMON] unlock_apps() called — session enforcement deactivated.")
             return True
         except Exception as e:
-            print(f"[DAEMON] unlock_apps() error: {e}")
+            logger.error(f"[DAEMON] unlock_apps() error: {e}")
             return False
 
     def get_available_apps(self) -> list:
@@ -590,25 +632,25 @@ class ShackleDaemon:
             result.sort(key=lambda a: a["name"])
             return result
         except Exception as e:
-            print(f"[DAEMON] get_available_apps() error: {e}")
+            logger.error(f"[DAEMON] get_available_apps() error: {e}")
             return []
 
     def add_to_blacklist(self, process_name: str) -> bool:
         try:
             self.os_locker.add_to_blacklist(process_name)
-            print(f"[DAEMON] add_to_blacklist() — added '{process_name}'")
+            logger.info(f"[DAEMON] add_to_blacklist() — added '{process_name}'")
             return True
         except Exception as e:
-            print(f"[DAEMON] add_to_blacklist() error: {e}")
+            logger.error(f"[DAEMON] add_to_blacklist() error: {e}")
             return False
 
     def remove_from_blacklist(self, process_name: str) -> bool:
         try:
             self.os_locker.remove_from_blacklist(process_name)
-            print(f"[DAEMON] remove_from_blacklist() — removed '{process_name}'")
+            logger.info(f"[DAEMON] remove_from_blacklist() — removed '{process_name}'")
             return True
         except Exception as e:
-            print(f"[DAEMON] remove_from_blacklist() error: {e}")
+            logger.error(f"[DAEMON] remove_from_blacklist() error: {e}")
             return False
 
     def set_book_mode(self, active: bool) -> bool:
@@ -621,10 +663,10 @@ class ShackleDaemon:
             else:
                 self.break_manager.set_grace("distracted", 120)
                 self.break_manager.set_grace("reading_paused", 180)
-            print(f"[DAEMON] set_book_mode({active}) executed successfully.")
+            logger.info(f"[DAEMON] set_book_mode({active}) executed successfully.")
             return True
         except Exception as e:
-            print(f"[DAEMON WARNING] Failed setting Book Mode: {e}")
+            logger.warning(f"[DAEMON WARNING] Failed setting Book Mode: {e}")
             return False
 
     def send_heartbeat(self):
@@ -655,7 +697,7 @@ class ShackleDaemon:
             pass  
 
     def execute_light_bomb(self):
-        print("\n⚡ EXECUTE LIGHT BOMB PROTOCOL ⚡")
+        logger.warning("\n⚡ EXECUTE LIGHT BOMB PROTOCOL ⚡")
         try:
             import tkinter as tk
             def launch():
@@ -671,11 +713,17 @@ class ShackleDaemon:
             t = threading.Thread(target=launch, daemon=True)
             t.start()
         except Exception as e:
-            print(f"[LIGHT BOMB ERROR] Failed to instantiate fullscreen window: {e}")
+            logger.error(f"[LIGHT BOMB ERROR] Failed to instantiate fullscreen window: {e}")
 
     def run(self):
         self.is_running = True
-        print(f"\n🛡️ Shackle AI Daemon Active for Session: {self.session_id}")
+        logger.info(f"🛡️ Shackle AI Daemon Active for Session: {self.session_id}")
+
+        # Run startup diagnostic self-test once at daemon boot
+        try:
+            self._run_startup_self_test()
+        except Exception as e:
+            logger.error(f"[DAEMON SELF-TEST ERROR] Failed executing startup self-test: {e}")
 
         try:
             while self.is_running and (self.stop_event is None or not self.stop_event.is_set()):
@@ -697,11 +745,11 @@ class ShackleDaemon:
 
                         self.send_heartbeat()
                     except Exception as e:
-                        print(f"[DAEMON LOOP ERROR] Error during tick execution: {e}")
+                        logger.error(f"[DAEMON LOOP ERROR] Error during tick execution: {e}")
                         continue
 
         except Exception as e:
-            print(f"[DAEMON THREAD CRASH] Error: {e}")
+            logger.error(f"[DAEMON THREAD CRASH] Error: {e}")
         finally:
             self.shutdown()
 
@@ -711,7 +759,7 @@ class ShackleDaemon:
                 return
             self._shutdown_called = True
 
-        print("\n[SYSTEM] Shutting down Daemon components...")
+        logger.info("[SYSTEM] Shutting down Daemon components...")
         self.is_running = False
 
         if self.vision_initialized and self.vision_engine:
@@ -720,18 +768,18 @@ class ShackleDaemon:
         if self.telemetry_initialized and self.telemetry_engine:
             self.telemetry_engine.shutdown()
 
-        print("Shutdown complete. You are un-Shackled.")
+        logger.info("Shutdown complete. You are un-Shackled.")
 
 
 if __name__ == "__main__":
-    print("Starting Shackle AI Non-Blocking Telemetry Tracker...")
+    logger.info("Starting Shackle AI Non-Blocking Telemetry Tracker...")
     telemetry = TelemetryEngine()
 
     try:
         while True:
             time.sleep(5)
             snapshot = telemetry.get_telemetry_snapshot()
-            print(
+            logger.info(
                 f"[{time.strftime('%H:%M:%S')}] State: {snapshot['status'].upper()} | "
                 f"KPM: {snapshot.get('kpm', 0)} | APM: {snapshot.get('apm', 0)} | "
                 f"Spoof Counter: {telemetry.rapid_fire_count:.1f} | "
@@ -740,4 +788,4 @@ if __name__ == "__main__":
 
     except KeyboardInterrupt:
         telemetry.shutdown()
-        print("\nTelemetry engine safely shut down.")
+        logger.info("Telemetry engine safely shut down.")
