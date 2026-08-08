@@ -17,7 +17,7 @@
     { "source": "/dashboard", "destination": "/backend/static/dashboard.html" },
     { "source": "/checkout", "destination": "/backend/static/checkout.html" },
     { "source": "/downloads", "destination": "/backend/static/downloads.html" },
-    { "source": "/hall-of-frauds", "destination": "/backend/static/frauds.html" },
+    { "source": "/hall-of-frauds", "destination": "/backend/static/hall-of-frauds.html" },
     { "source": "/privacy-policy", "destination": "/backend/static/privacy-policy.html" },
     { "source": "/terms", "destination": "/backend/static/terms.html" },
     { "source": "/refund-policy", "destination": "/backend/static/refund-policy.html" },

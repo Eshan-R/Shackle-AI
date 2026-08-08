@@ -1414,7 +1414,7 @@ def downloads_page():
 
 @app.get("/hall-of-frauds")
 def hall_of_frauds_page():
-    return FileResponse(os.path.join(_STATIC_DIR, "frauds.html"))
+    return FileResponse(os.path.join(_STATIC_DIR, "hall-of-frauds.html"))
 
 @app.get("/privacy-policy")
 def privacy_policy_page():
