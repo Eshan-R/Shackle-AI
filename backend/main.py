@@ -1399,61 +1399,38 @@ def trigger_autonomous_audit():
 # 7. PUBLIC HTML PAGES
 # =====================================================================
 
-@app.get("/frauds", response_class=HTMLResponse)
-def hall_of_frauds_page():
-    """Serves the public Hall of Frauds live shame wall."""
-    html_path = os.path.join(_STATIC_DIR, "hall_of_frauds.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/checkout", response_class=HTMLResponse)
-def checkout_page():
-    """Serves the Razorpay checkout page. Takes ?user_id=xxx as a query param."""
-    html_path = os.path.join(_STATIC_DIR, "checkout.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/privacy-policy", response_class=HTMLResponse)
-def privacy_policy_page():
-    """Serves the Privacy Policy document."""
-    html_path = os.path.join(_STATIC_DIR, "privacy-policy.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/terms", response_class=HTMLResponse)
-def terms_page():
-    """Serves the Terms of Service document."""
-    html_path = os.path.join(_STATIC_DIR, "terms.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/refund-policy", response_class=HTMLResponse)
-def refund_policy_page():
-    """Serves the Cancellation & Refund Policy document."""
-    html_path = os.path.join(_STATIC_DIR, "refund-policy.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/roadmap", response_class=HTMLResponse)
-def roadmap_page():
-    """Serves the public feature roadmap — upcoming premium capabilities and target windows."""
-    html_path = os.path.join(_STATIC_DIR, "roadmap.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
-
-@app.get("/dashboard", response_class=HTMLResponse)
+@app.get("/")
+@app.get("/dashboard")
 def dashboard_page():
-    """Serves the post-login welcome dashboard."""
-    html_path = os.path.join(_STATIC_DIR, "dashboard.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+    return FileResponse(os.path.join(_STATIC_DIR, "dashboard.html"))
 
-@app.get("/downloads", response_class=HTMLResponse)
+@app.get("/checkout")
+def checkout_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "checkout.html"))
+
+@app.get("/downloads")
 def downloads_page():
-    """Serves the desktop app download page."""
-    html_path = os.path.join(_STATIC_DIR, "downloads.html")
-    with open(html_path, encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+    return FileResponse(os.path.join(_STATIC_DIR, "downloads.html"))
+
+@app.get("/hall-of-frauds")
+def hall_of_frauds_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "frauds.html"))
+
+@app.get("/privacy-policy")
+def privacy_policy_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "privacy-policy.html"))
+
+@app.get("/terms")
+def terms_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "terms.html"))
+
+@app.get("/refund-policy")
+def refund_policy_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "refund-policy.html"))
+
+@app.get("/roadmap")
+def roadmap_page():
+    return FileResponse(os.path.join(_STATIC_DIR, "roadmap.html"))
 
 @app.get("/api/status")
 def system_check():
