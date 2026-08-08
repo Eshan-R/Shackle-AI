@@ -82,9 +82,13 @@ def start_backend_server():
             print(f"[WARNING] Backend directory not found at {backend_dir}")
             return
 
-        # Add the *parent* of backend/ so `from backend.main import` works.
+        # Add backend_parent for `from backend.main import ...`
         if backend_parent not in sys.path:
             sys.path.insert(0, backend_parent)
+
+        # Add backend_dir directly for internal imports like `import firebase_config`
+        if backend_dir not in sys.path:
+            sys.path.insert(0, backend_dir)
 
         print(f"[SYSTEM] Starting backend server from {backend_dir}")
 
@@ -112,7 +116,7 @@ def start_backend_server():
         backend_thread = threading.Thread(target=run_server, daemon=True)
         backend_thread.start()
 
-        print("[SYSTEM] Backend server thread initialized on http://0.0.0.0:8080")
+        print("[SYSTEM] Backend server thread initialized on http://127.0.0.1:8080")
     except Exception as e:
         print(f"[ERROR] Failed to start backend server: {e}")
 
@@ -132,7 +136,7 @@ def cleanup():
         daemon_instance.shutdown()
 
 
-def wait_for_backend(url: str = "http://0.0.0.0:8080/api/health", retries: int = 20, delay: float = 0.3):
+def wait_for_backend(url: str = "http://127.0.0.1:8080/api/health", retries: int = 20, delay: float = 0.3):
     """Polls backend health check endpoint until ready or timeout."""
     for i in range(retries):
         try:
@@ -163,7 +167,7 @@ def main():
     user_id = "local_developer"
     # session_id is intentionally left empty — it will only be set by the backend
     # /v1/session/start after the user authenticates via Firebase.
-    backend_api = "http://0.0.0.0:8080"
+    backend_api = "http://127.0.0.1:8080"
 
     print("[SYSTEM] Pre-booting biometric and system processing engines...")
     shutdown_event.clear()
@@ -182,7 +186,7 @@ def main():
     daemon_thread.start()
 
     # 5. Spin up the window framework layers
-    ui_url = "http://0.0.0.0:8080"
+    ui_url = "http://127.0.0.1:8080"
     print("[SYSTEM] Initializing edge desktop window wrapper layers...")
     window = webview.create_window(
         title='Shackle AI',

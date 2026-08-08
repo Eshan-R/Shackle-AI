@@ -46,6 +46,7 @@ a = Analysis(
         ('desktop/assets', 'assets'),      # MediaPipe .task files
         ('backend', 'backend'),            # Backend FastAPI package
         ('.env', '.'),                     # Environment variables
+        ('logo.ico', '.'),                 # App Icon
     ] + mediapipe_data + firebase_admin_data + genai_datas + razorpay_datas + matplotlib_data,
     hiddenimports=[
         # ---------- Desktop modules (flat files inside desktop/) ----------
@@ -59,6 +60,7 @@ a = Analysis(
         'backend',
         'backend.main',
         'backend.firebase_config',
+        'firebase_config',
         'backend.services',
         'backend.services.gemini_agent',
         'backend.services.calendar_mesh',
@@ -135,6 +137,7 @@ exe = EXE(
     [],
     name='ShackleAI',
     debug=False,
+    icon='logo.ico',
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
