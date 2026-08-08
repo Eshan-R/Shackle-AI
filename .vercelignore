@@ -1,18 +1,18 @@
-# Python Backend Files & Envs
+# Ignore Python files specifically (keep backend/static)
 *.py
-backend/
+backend/*.py
+backend/**/*.py
 .venv/
 venv/
 __pycache__/
 
-# Secrets & Configs
+# Secrets & Non-Web Code
 .env
 .env.*
-*.env
-
-# Non-Web Codebases
 desktop/
 mobile/
+Dockerfile
+docker-compose.yml
 
 # Container / Infrastructure
 Dockerfile
