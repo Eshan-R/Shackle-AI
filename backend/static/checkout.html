@@ -1,3 +1,5 @@
+--- backend/static/checkout.html ---
+
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -195,6 +197,19 @@
     .btn:hover:not(:disabled) { background: var(--accent-tint); }
     .btn:active:not(:disabled) { transform: scale(0.99); }
     .btn:disabled { background: var(--rule); color: var(--muted); cursor: not-allowed; }
+    .waitlist-note {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .waitlist-note a {
+      color: var(--accent);
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .waitlist-note a:hover { text-decoration: underline; }
 
     .secure {
       font-size: 10.5px;
@@ -316,9 +331,13 @@
         <li><span class="check">[x]</span> Priority Gemini roast generation — faster, sharper, more personalized</li>
       </ul>
 
-      <button class="btn" id="pay-btn" onclick="startCheckout()">
+      <button class="btn" id="pay-btn" disabled title="Premium checkout opens soon — join the waitlist below">
         Pay $9.99 — Activate Premium
       </button>
+      <p class="waitlist-note">
+        Premium checkout isn't open yet.
+        <a href="https://forms.gle/7wWoJrGBikympojm7" target="_blank" rel="noopener">Join the waitlist →</a>
+      </p>
       <div class="error-msg" id="error-msg"></div>
       <p class="secure">Secured · Razorpay</p>
     </div>
@@ -720,3 +739,5 @@
 
 </body>
 </html>
+
+--- backend/static/dashboard.html ---
