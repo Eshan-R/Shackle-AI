@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import Dict, List, Optional
-from .firebase_config import ShackleDB
+from firebase_config import ShackleDB
 from gtts import gTTS
 from elevenlabs.client import ElevenLabs
 from dotenv import load_dotenv
