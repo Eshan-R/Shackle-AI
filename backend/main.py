@@ -79,6 +79,28 @@ except ImportError:
 _BACKEND_DIR = os.path.dirname(__file__)
 _STATIC_DIR  = os.path.join(_BACKEND_DIR, "static")
 
+# ── Resolve the React dist folder ────────────────────────────────────────────
+# Priority:
+#   1. PyInstaller bundle  → _MEIPASS/dist  (spec copies desktop/dist as 'dist')
+#   2. Local dev           → <project_root>/desktop/dist
+#   3. Fallback            → <cwd>/dist
+def _resolve_dist_path() -> str | None:
+    if hasattr(sys, '_MEIPASS'):
+        candidate = os.path.join(sys._MEIPASS, 'dist')
+        if os.path.isdir(candidate):
+            return candidate
+    _backend_dir = os.path.dirname(os.path.abspath(__file__))
+    _project_root = os.path.dirname(_backend_dir)
+    for candidate in [
+        os.path.join(_project_root, 'desktop', 'dist'),
+        os.path.join(os.getcwd(), 'dist'),
+    ]:
+        if os.path.isdir(candidate):
+            return candidate
+    return None
+
+_DIST_DIR = _resolve_dist_path()
+
 app = FastAPI(
     title="Shackle AI Enterprise Core",
     description="Central Orchestration Engine for Desktop, Mobile, and Cloud Edge Layers.",
@@ -91,7 +113,7 @@ app.add_middleware(
         # ── Local development ──────────────────────────────────────────────
         "http://localhost:3000",        # CRA / Next.js dev server
         "http://localhost:5173",        # Vite dev server
-        "http://0.0.0.0:8080",        # FastAPI itself (loopback OAuth flow)
+        "http://127.0.0.1:8080",        # FastAPI itself (loopback OAuth flow)
         # ── Vercel production ──────────────────────────────────────────────
         "https://shackle-ai.vercel.app",
     ],
@@ -1399,7 +1421,17 @@ def trigger_autonomous_audit():
 # 7. PUBLIC HTML PAGES
 # =====================================================================
 
+# GET / — serve React SPA index.html when dist is available; fall back to
+# the marketing dashboard page when running without a bundled frontend.
 @app.get("/")
+def root_page():
+    if _DIST_DIR:
+        index = os.path.join(_DIST_DIR, "index.html")
+        if os.path.isfile(index):
+            return FileResponse(index)
+    # Fallback: marketing landing page (used when backend runs standalone)
+    return FileResponse(os.path.join(_STATIC_DIR, "dashboard.html"))
+
 @app.get("/dashboard")
 def dashboard_page():
     return FileResponse(os.path.join(_STATIC_DIR, "dashboard.html"))
@@ -1436,26 +1468,12 @@ def roadmap_page():
 def system_check():
     return {"engine": "Shackle AI Server Layer", "mesh_status": "Synchronized"}
 
-# Determine the path to the dist folder
-def get_dist_path():
-    # In PyInstaller bundle
-    if hasattr(sys, '_MEIPASS'):
-        return os.path.join(sys._MEIPASS, 'dist')
-    # In development: backend/ is inside project root, desktop/dist is sibling of backend
-    _backend_dir = os.path.dirname(os.path.abspath(__file__))
-    _project_root = os.path.dirname(_backend_dir)
-    _dist = os.path.join(_project_root, 'desktop', 'dist')
-    if os.path.exists(_dist):
-        return _dist
-    # Fallback: try current directory
-    _cwd_dist = os.path.join(os.getcwd(), 'dist')
-    if os.path.exists(_cwd_dist):
-        return _cwd_dist
-    return None
-
-dist_path = get_dist_path()
-if dist_path and os.path.exists(dist_path):
-    app.mount("/", StaticFiles(directory=dist_path, html=True), name="app")
-    print(f"[SYSTEM] Serving frontend from {dist_path}")
+# ── SPA catch-all mount ──────────────────────────────────────────────────────
+# MUST be registered last — any app.get() or app.post() route declared above
+# will take priority over this mount.  html=True makes StaticFiles serve
+# index.html for paths that don't match a real file (React Router support).
+if _DIST_DIR:
+    app.mount("/app", StaticFiles(directory=_DIST_DIR, html=True), name="spa")
+    print(f"[SYSTEM] React SPA assets mounted from {_DIST_DIR}")
 else:
-    print("[WARNING] dist folder not found. Frontend will not be served.")
+    print("[WARNING] dist/ folder not found — React frontend assets will not be served.")

@@ -10,14 +10,14 @@
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
     },
-    { "source": "/", "destination": "/dashboard.html" },
-    { "source": "/checkout", "destination": "/checkout.html" },
-    { "source": "/downloads", "destination": "/downloads.html" },
-    { "source": "/hall-of-frauds", "destination": "/hall_of_frauds.html" },
-    { "source": "/privacy-policy", "destination": "/privacy-policy.html" },
-    { "source": "/terms", "destination": "/terms.html" },
-    { "source": "/refund-policy", "destination": "/refund-policy.html" },
-    { "source": "/roadmap", "destination": "/roadmap.html" },
-    { "source": "/static/releases.json", "destination": "/releases.json" }
+    { "source": "/", "destination": "/backend/static/dashboard.html" },
+    { "source": "/checkout", "destination": "/backend/static/checkout.html" },
+    { "source": "/downloads", "destination": "/backend/static/downloads.html" },
+    { "source": "/hall-of-frauds", "destination": "/backend/static/hall_of_frauds.html" },
+    { "source": "/privacy-policy", "destination": "/backend/static/privacy-policy.html" },
+    { "source": "/terms", "destination": "/backend/static/terms.html" },
+    { "source": "/refund-policy", "destination": "/backend/static/refund-policy.html" },
+    { "source": "/roadmap", "destination": "/backend/static/roadmap.html" },
+    { "source": "/static/releases.json", "destination": "/backend/static/releases.json" }
   ]
 }
