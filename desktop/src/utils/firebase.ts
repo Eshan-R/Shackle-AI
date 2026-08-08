@@ -209,6 +209,13 @@ export async function fetchLeagueLeaderboard(tier: string): Promise<LeagueUser[]
     const querySnapshot = await getDocs(q);
     const leaderboard: LeagueUser[] = [];
     
+    const parseStrikesNum = (val: any): number => {
+      if (typeof val === 'number') return val;
+      if (!val || String(val).toLowerCase() === 'none') return 0;
+      const match = String(val).match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    };
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       leaderboard.push({
@@ -216,6 +223,8 @@ export async function fetchLeagueLeaderboard(tier: string): Promise<LeagueUser[]
         username: data.username || 'unshackler',
         displayName: data.displayName || 'Anonymous',
         xp: data.xp || 0,
+        streak: data.streak || 0,
+        strikes: parseStrikesNum(data.strikes),
         isCurrentUser: auth.currentUser?.uid === doc.id
       });
     });
@@ -231,6 +240,12 @@ export async function fetchLeagueLeaderboard(tier: string): Promise<LeagueUser[]
     // are only visible in the detail, not in the top-level message string.
     console.error('Error fetching Firestore league standings:', error);
     try {
+      const parseStrikesNum = (val: any): number => {
+        if (typeof val === 'number') return val;
+        if (!val || String(val).toLowerCase() === 'none') return 0;
+        const match = String(val).match(/\d+/);
+        return match ? parseInt(match[0], 10) : 0;
+      };
       const allUsersSnap = await getDocs(collection(db, 'users'));
       const allUsers: LeagueUser[] = [];
       allUsersSnap.forEach((doc) => {
@@ -241,6 +256,8 @@ export async function fetchLeagueLeaderboard(tier: string): Promise<LeagueUser[]
             username: data.username || 'unshackler',
             displayName: data.displayName || 'Anonymous',
             xp: data.xp || 0,
+            streak: data.streak || 0,
+            strikes: parseStrikesNum(data.strikes),
             isCurrentUser: auth.currentUser?.uid === doc.id
           });
         }
@@ -262,6 +279,13 @@ export function subscribeToLeagueLeaderboard(tier: string, callback: (users: Lea
     limit(50)
   );
 
+  const parseStrikesNum = (val: any): number => {
+    if (typeof val === 'number') return val;
+    if (!val || String(val).toLowerCase() === 'none') return 0;
+    const match = String(val).match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
+  };
+
   return onSnapshot(q, (querySnapshot) => {
     const leaderboard: LeagueUser[] = [];
     querySnapshot.forEach((doc) => {
@@ -271,6 +295,8 @@ export function subscribeToLeagueLeaderboard(tier: string, callback: (users: Lea
         username: data.username || 'unshackler',
         displayName: data.displayName || 'Anonymous',
         xp: data.xp || 0,
+        streak: data.streak || 0,
+        strikes: parseStrikesNum(data.strikes),
         isCurrentUser: auth.currentUser?.uid === doc.id
       });
     });

@@ -96,5 +96,7 @@ export interface LeagueUser {
   username: string;
   displayName: string;
   xp: number;
+  streak: number;
+  strikes: number;
   isCurrentUser?: boolean;
 }

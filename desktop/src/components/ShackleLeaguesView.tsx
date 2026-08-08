@@ -344,6 +344,13 @@ export default function ShackleLeaguesView({ profile, onUpdateProfile, displaySe
         // The current user's own row is always injected separately below (with
         // their real streak/strikes from `profile`), so exclude any self-row here
         // to avoid a duplicate entry.
+        const parseStrikesValue = (val: any): number => {
+          if (typeof val === 'number') return val;
+          if (!val || String(val).toLowerCase() === 'none') return 0;
+          const match = String(val).match(/\d+/);
+          return match ? parseInt(match[0], 10) : 0;
+        };
+
         return rows
           .filter((u: any) => !u.isCurrentUser)
           .map((u: any) => ({
@@ -352,8 +359,8 @@ export default function ShackleLeaguesView({ profile, onUpdateProfile, displaySe
             display_name: u.displayName,
             avatar_url: u.avatarUrl || `https://api.dicebear.com/7.x/bottts/svg?seed=${u.username}`,
             xp: u.xp || 0,
-            streak: 0,
-            strikes: 0,
+            streak: u.streak || 0,
+            strikes: parseStrikesValue(u.strikes),
             is_current_user: false
           }));
       } catch (err) {

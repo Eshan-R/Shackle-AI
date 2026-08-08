@@ -207,6 +207,17 @@ export type ProfileResult =
   | { source: 'local'; profile: UserProfile }
   | { source: 'default'; profile: UserProfile };
 
+// Helper to check if a profile is an un-hydrated default/guest placeholder profile
+export function isPlaceholderProfile(p: UserProfile | null | undefined): boolean {
+  if (!p) return true;
+  const placeholderUsernames = ['guest', 'guest_user', '@guest', ''];
+  const placeholderNames = ['Guest', 'Guest Unshackler', ''];
+  const username = (p.username || '').toLowerCase().trim();
+  const displayName = (p.displayName || '').trim();
+
+  return placeholderUsernames.includes(username) || placeholderNames.includes(displayName);
+}
+
 // Helper to check if a profile contains non-placeholder identity or progress evidence
 function hasProfileEvidence(p: UserProfile | null | undefined): boolean {
   if (!p) return false;
@@ -292,13 +303,33 @@ export const pywebviewBridge = {
     let profileToSave = incomingProfile;
 
     if (auth.currentUser) {
-      console.log('[saveProfile] User authenticated, performing safe-merge with Firestore.');
+      console.log('[saveProfile] User authenticated, checking remote dbProfile before Firestore sync.');
       try {
         const remote = await fetchUserProfile(auth.currentUser.uid);
         if (remote) {
+          // 🛡️ Guard 1: Abort Firestore write if incoming local profile is still default placeholder (e.g. username: 'guest')
+          // while an authenticated user profile exists in dbProfile. Hydrate local state with remote dbProfile.
+          if (isPlaceholderProfile(incomingProfile) && !isPlaceholderProfile(remote)) {
+            console.warn(
+              '[saveProfile] Aborting Firestore sync: local profile is default placeholder while authenticated dbProfile exists. Hydrating local storage with remote dbProfile.',
+              { incomingProfile, remote }
+            );
+            localStorage.setItem(LKEY_PROFILE, JSON.stringify(remote));
+            if (isDesktopApp() && window.pywebview?.api?.save_profile_backup) {
+              window.pywebview.api.save_profile_backup(remote).catch(() => {});
+            }
+            return remote;
+          }
+
           profileToSave = {
             ...remote,
             ...incomingProfile,
+            username: (!isPlaceholderProfile(incomingProfile) && incomingProfile.username)
+              ? incomingProfile.username
+              : (remote.username || incomingProfile.username),
+            displayName: (!isPlaceholderProfile(incomingProfile) && incomingProfile.displayName)
+              ? incomingProfile.displayName
+              : (remote.displayName || incomingProfile.displayName),
             // Non-destructive safe-merge for core gamification and progress stats
             xp: Math.max(remote.xp || 0, incomingProfile.xp || 0),
             streak: Math.max(remote.streak || 0, incomingProfile.streak || 0),
@@ -313,13 +344,38 @@ export const pywebviewBridge = {
               ? incomingProfile.penalty_phase
               : remote.penalty_phase,
             // Prevent undefined from overwriting a valid date already in Firestore.
-            // undefined here would cause a Firestore write error and also break the
-            // backend's end_focus_session day-gate (streak increments on every session).
             last_session_date: incomingProfile.last_session_date ?? remote.last_session_date ?? null,
             updatedAt: Date.now(),
           };
           console.log('[saveProfile] Safe-merged profile result:', profileToSave);
+        } else {
+          // 🛡️ Guard 2: Postpone Firestore write if user is signed in but incomingProfile is still a default placeholder and no remote doc exists yet
+          if (isPlaceholderProfile(incomingProfile)) {
+            console.warn(
+              '[saveProfile] Postponing Firestore sync: user is authenticated but profile is default placeholder and no remote doc exists yet.',
+              incomingProfile
+            );
+            localStorage.setItem(LKEY_PROFILE, JSON.stringify(incomingProfile));
+            return incomingProfile;
+          }
         }
+
+        // Inspect payload keys and types before sending to Firestore
+        const keysWithTypes: Record<string, string> = {};
+        const undefinedKeys: string[] = [];
+        for (const [k, v] of Object.entries(profileToSave)) {
+          if (v === undefined) {
+            undefinedKeys.push(k);
+          } else {
+            keysWithTypes[k] = v === null ? 'null' : (Array.isArray(v) ? `array[${v.length}]` : typeof v);
+          }
+        }
+        console.log(`[saveProfile] Payload inspection for user '${auth.currentUser.uid}' (${Object.keys(keysWithTypes).length} valid keys):`, keysWithTypes);
+        if (undefinedKeys.length > 0) {
+          console.warn(`[saveProfile] ⚠️ Omitted ${undefinedKeys.length} undefined key(s):`, undefinedKeys);
+        }
+
+        // Firestore write only triggers once remote dbProfile check has completed and incomingProfile is non-placeholder
         await saveUserProfile(auth.currentUser.uid, profileToSave);
         logIpc('in', 'save_profile (Firestore Safe-Merge)', profileToSave);
       } catch (err) {
@@ -554,6 +610,8 @@ export const pywebviewBridge = {
           username: currentProfile.username || 'user',
           displayName: currentProfile.displayName || 'User',
           xp: xpEarned,
+          streak: currentProfile.streak || 0,
+          strikes: typeof currentProfile.strikes === 'number' ? currentProfile.strikes : (currentProfile.strikes && String(currentProfile.strikes).toLowerCase() !== 'none' ? 1 : 0),
           isCurrentUser: true
         });
       }
@@ -737,6 +795,8 @@ export const pywebviewBridge = {
         username: localProfile.username || 'guest',
         displayName: localProfile.displayName || 'Guest',
         xp: localProfile.xp || 0,
+        streak: localProfile.streak || 0,
+        strikes: typeof localProfile.strikes === 'number' ? localProfile.strikes : (localProfile.strikes && String(localProfile.strikes).toLowerCase() !== 'none' ? 1 : 0),
         isCurrentUser: true
       }
     ];

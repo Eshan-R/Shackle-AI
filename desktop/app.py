@@ -228,7 +228,7 @@ def main():
     external_link_handler = ExternalLinkHandler()
     window.expose(external_link_handler.open_external_link)
 
-    webview.start(debug=True)
+    webview.start(debug=False)
 
     print("\n[SYSTEM] Desktop window close intercepted. Initiating safe teardown...")
     shutdown_event.set()

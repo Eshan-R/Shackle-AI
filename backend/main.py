@@ -936,107 +936,116 @@ def get_level_from_xp(xp: int) -> int:
         level += 1
     return level
 
-@app.post("/v1/session/end")
-def end_focus_session(session_id: str, user_id: str, xp_earned: int = 0, duration_minutes: int = 0):
+def _background_end_focus_session(session_id: str, user_id: str, xp_earned: int, duration_minutes: int):
     """
-    Cleanly closes a session. Increments the user's streak if they completed
-    it without hitting Strike 3. Also persists the session's earned XP.
-    During Phase 2 (probation), session duration must be at least 30 minutes to increment streak.
+    Executes database writes, streak checks, XP calculations, and Firestore persistence
+    asynchronously in the background to keep HTTP responses non-blocking.
     """
-    sess = ShackleDB.get_session(user_id, session_id)
-    already_completed = sess and sess.get("status") == "completed"
+    try:
+        sess = ShackleDB.get_session(user_id, session_id)
+        already_completed = sess and sess.get("status") == "completed"
 
-    if sess:
-        sess["status"] = "completed"
-        ShackleDB.set_session(user_id, session_id, sess)
-        strikes = parse_strikes(sess.get("strikes", 0))
-        session_duration = duration_minutes or (sess.get("elapsed_seconds", 0) // 60) or sess.get("duration_expected", 0) or xp_earned
-    else:
-        strikes = 0
-        session_duration = duration_minutes or xp_earned
+        if sess:
+            sess["status"] = "completed"
+            ShackleDB.set_session(user_id, session_id, sess)
+            strikes = parse_strikes(sess.get("strikes", 0))
+            session_duration = duration_minutes or (sess.get("elapsed_seconds", 0) // 60) or sess.get("duration_expected", 0) or xp_earned
+        else:
+            strikes = 0
+            session_duration = duration_minutes or xp_earned
 
-    profile = ShackleDB.get_user(user_id) or {}
+        profile = ShackleDB.get_user(user_id) or {}
 
-    if already_completed:
-        return {
-            "status": "completed",
-            "streak": profile.get("streak", 0),
-            "xp": profile.get("xp", 0),
-            "level": profile.get("level", 1),
-            "message": "Session already completed and stats recorded."
+        if already_completed:
+            print(f"[BACKGROUND SESSION END] Session '{session_id}' already marked completed for user '{user_id}'.")
+            return
+
+        # Persist XP regardless of strike outcome
+        profile["xp"] = profile.get("xp", 0) + xp_earned
+        profile["level"] = get_level_from_xp(profile["xp"])
+
+        penalty_phase = profile.get("penalty_phase", 0)
+
+        # Determine streak increment — only once per calendar day
+        today_str = time.strftime('%Y-%m-%d')
+        raw_last_date = profile.get("last_session_date")
+        last_session_date = raw_last_date if (raw_last_date and raw_last_date not in ["undefined", "null"]) else None
+
+        if strikes < 3:
+            if penalty_phase == 2 and session_duration < 30:
+                profile["last_session_date"] = last_session_date or today_str
+            else:
+                if last_session_date != today_str:
+                    # First completed session of the day — increment streak
+                    profile["streak"] = profile.get("streak", 0) + 1
+                    profile["last_session_date"] = today_str
+                else:
+                    profile["last_session_date"] = today_str
+        else:
+            profile["streak"] = 0
+            profile["last_session_date"] = today_str
+
+        # Append session entry to user's sessions list in profile
+        user_sessions = profile.get("sessions")
+        if not isinstance(user_sessions, list):
+            user_sessions = []
+
+        start_time_val = None
+        if sess:
+            start_time_val = sess.get("start_time") or sess.get("startTime") or sess.get("created_at")
+            if isinstance(start_time_val, (int, float)):
+                start_time_val = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(start_time_val))
+
+        if not start_time_val:
+            start_time_val = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+
+        prevented_apps = []
+        if sess:
+            prevented_apps = sess.get("blacklisted_apps", sess.get("blacklistedAppsPrevented", []))
+
+        session_entry = {
+            "id": session_id,
+            "startTime": start_time_val,
+            "duration": session_duration,
+            "type": "focus",
+            "xpEarned": xp_earned,
+            "completed": True,
+            "blacklistedAppsPrevented": prevented_apps,
+            "strikes": strikes
         }
 
-    # Persist XP regardless of strike outcome
-    profile["xp"] = profile.get("xp", 0) + xp_earned
-    profile["level"] = get_level_from_xp(profile["xp"])
+        if not any(isinstance(s, dict) and s.get("id") == session_id for s in user_sessions):
+            user_sessions.append(session_entry)
 
-    penalty_phase = profile.get("penalty_phase", 0)
+        profile["sessions"] = user_sessions
+        ShackleDB.set_user(user_id, profile)
+        print(f"[BACKGROUND SESSION END] Session '{session_id}' successfully saved & synchronized for '{user_id}'.")
+    except Exception as e:
+        print(f"[BACKGROUND SESSION ERROR] Session '{session_id}' processing failed: {e}")
 
-    # Determine streak increment — only once per calendar day
-    today_str = time.strftime('%Y-%m-%d')
-    raw_last_date = profile.get("last_session_date")
-    last_session_date = raw_last_date if (raw_last_date and raw_last_date not in ["undefined", "null"]) else None
-
-    if strikes < 3:
-        if penalty_phase == 2 and session_duration < 30:
-            msg = "Session complete. XP recorded, but Phase 2 probation requires at least 30 min focus for streak increment."
-            profile["last_session_date"] = last_session_date or today_str
-        else:
-            if last_session_date != today_str:
-                # First completed session of the day — increment streak
-                profile["streak"] = profile.get("streak", 0) + 1
-                profile["last_session_date"] = today_str
-                msg = "Session complete. Streak incremented (first session of the day)."
-            else:
-                # Already had a session today — XP accumulates but streak stays the same
-                profile["last_session_date"] = today_str
-                msg = "Session complete. XP recorded. No streak increment (already completed a session today)."
-    else:
-        profile["streak"] = 0
-        profile["last_session_date"] = today_str
-        msg = "Session ended. Streak reset — 3+ infractions recorded. XP persisted."
-
-    # Append session entry to user's sessions list in profile
-    user_sessions = profile.get("sessions")
-    if not isinstance(user_sessions, list):
-        user_sessions = []
-
-    start_time_val = None
-    if sess:
-        start_time_val = sess.get("start_time") or sess.get("startTime") or sess.get("created_at")
-        if isinstance(start_time_val, (int, float)):
-            start_time_val = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(start_time_val))
-
-    if not start_time_val:
-        start_time_val = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-
-    prevented_apps = []
-    if sess:
-        prevented_apps = sess.get("blacklisted_apps", sess.get("blacklistedAppsPrevented", []))
-
-    session_entry = {
-        "id": session_id,
-        "startTime": start_time_val,
-        "duration": session_duration,
-        "type": "focus",
-        "xpEarned": xp_earned,
-        "completed": True,
-        "blacklistedAppsPrevented": prevented_apps,
-        "strikes": strikes
-    }
-
-    if not any(isinstance(s, dict) and s.get("id") == session_id for s in user_sessions):
-        user_sessions.append(session_entry)
-
-    profile["sessions"] = user_sessions
-
-    ShackleDB.set_user(user_id, profile)
+@app.post("/v1/session/end")
+def end_focus_session(
+    session_id: str,
+    user_id: str,
+    background_tasks: BackgroundTasks,
+    xp_earned: int = 0,
+    duration_minutes: int = 0
+):
+    """
+    Cleanly closes a session. Offloads database writes, streak calculations,
+    and remote sync tasks to FastAPI BackgroundTasks to return an immediate 200 OK.
+    """
+    background_tasks.add_task(
+        _background_end_focus_session,
+        session_id=session_id,
+        user_id=user_id,
+        xp_earned=xp_earned,
+        duration_minutes=duration_minutes
+    )
     return {
-        "status": "completed",
-        "streak": profile.get("streak", 0),
-        "xp": profile["xp"],
-        "level": profile["level"],
-        "message": msg
+        "status": "queued",
+        "session_id": session_id,
+        "message": "Session teardown and persistence dispatched to background task."
     }
 
 @app.post("/v1/session/redeem-strikes")

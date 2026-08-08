@@ -268,6 +268,7 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [aiReportText, setAiReportText] = useState("");
   const [roastAudioUrl, setRoastAudioUrl] = useState<string | null>(null);
+  const [isRoastPlaying, setIsRoastPlaying] = useState<boolean>(false);
   const [strikeToast, setStrikeToast] = useState<{ count: number; reason: string } | null>(null);
   const [roastText, setRoastText] = useState<string | null>(null);
   const [isRoastDismissed, setIsRoastDismissed] = useState<boolean>(false);
@@ -288,6 +289,8 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
 
   // Plays roast audio via AudioContext (bypasses autoplay) with fallback to Audio element
   const playRoastWithContext = async (url: string) => {
+    if (isRoastPlaying) return; // prevent overlapping/duplicate playback
+    setIsRoastPlaying(true);
     const ctx = window.__shackleAudioContext || audioContextRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
     try {
       if (ctx.state === 'suspended') await ctx.resume();
@@ -303,11 +306,27 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
-      source.start();
+      await new Promise<void>((resolve) => {
+        source.onended = () => resolve();
+        source.start();
+      });
     } catch (e) {
       console.warn('[RoastAudio] AudioContext playback failed, falling back to Audio element:', e);
-      const audio = new Audio(url);
-      audio.play().catch(err => console.warn('[RoastAudio] Fallback play also failed:', err));
+      try {
+        const audio = new Audio(url);
+        await new Promise<void>((resolve) => {
+          audio.onended = () => resolve();
+          audio.onerror = () => resolve();
+          audio.play().catch(err => {
+            console.warn('[RoastAudio] Fallback play also failed:', err);
+            resolve();
+          });
+        });
+      } catch (fallbackErr) {
+        console.warn('[RoastAudio] Audio fallback error:', fallbackErr);
+      }
+    } finally {
+      setIsRoastPlaying(false);
     }
   };
 
@@ -1584,13 +1603,15 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
           <span className="text-xl shrink-0">💬</span>
           <span className="text-sm font-medium flex-1">Shackle AI has a roast for you!</span>
           <button
-            onClick={() => {
-              playRoastWithContext(roastAudioUrl);
-              setRoastAudioUrl(null);
-            }}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xs font-semibold shrink-0 transition-colors"
+            onClick={() => playRoastWithContext(roastAudioUrl)}
+            disabled={isRoastPlaying}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-colors ${
+              isRoastPlaying
+                ? 'bg-blue-600/50 text-blue-200 cursor-not-allowed opacity-70'
+                : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+            }`}
           >
-            Play 🔊
+            {isRoastPlaying ? 'Playing...' : 'Replay 🔊'}
           </button>
           <button
             onClick={() => setRoastAudioUrl(null)}

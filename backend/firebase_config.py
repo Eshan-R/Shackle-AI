@@ -38,20 +38,25 @@ class ShackleDatabaseManager:
         raw_json = os.environ.get("FIREBASE_SERVICE_ACCOUNT_RAW")
 
         try:
-            if os.path.exists(cred_path):
-                cred = credentials.Certificate(cred_path)
-                firebase_admin.initialize_app(cred)
-                self.db = firestore.client()
-                print("[DATABASE] Firebase Core connected via local service account key file.")
-            elif raw_json:
-                cred_dict = json.loads(raw_json)
-                cred = credentials.Certificate(cred_dict)
-                firebase_admin.initialize_app(cred)
-                self.db = firestore.client()
-                print("[DATABASE] Firebase Core successfully instantiated from runtime environment string.")
+            if not firebase_admin._apps:
+                if os.path.exists(cred_path):
+                    cred = credentials.Certificate(cred_path)
+                    firebase_admin.initialize_app(cred)
+                    print("[DATABASE] Firebase Core connected via local service account key file.")
+                elif raw_json:
+                    cred_dict = json.loads(raw_json)
+                    cred = credentials.Certificate(cred_dict)
+                    firebase_admin.initialize_app(cred)
+                    print("[DATABASE] Firebase Core successfully instantiated from runtime environment string.")
+                else:
+                    self.fallback_mode = True
+                    print("[WARNING] No Firebase credentials located. Operating in transient Local Cache Mode.")
+                    return
             else:
-                self.fallback_mode = True
-                print("[WARNING] No Firebase credentials located. Operating in transient Local Cache Mode.")
+                firebase_admin.get_app()
+                print("[DATABASE] Firebase Core retrieved existing default app instance.")
+
+            self.db = firestore.client()
         except Exception as e:
             self.fallback_mode = True
             print(f"[ERROR] Connection gateway rejected credentials: {e}. Defaulting to Local Cache.")
