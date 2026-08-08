@@ -1,6 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/dashboard",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -10,7 +17,7 @@
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
     },
-    { "source": "/", "destination": "/backend/static/dashboard.html" },
+    { "source": "/dashboard", "destination": "/backend/static/dashboard.html" },
     { "source": "/checkout", "destination": "/backend/static/checkout.html" },
     { "source": "/downloads", "destination": "/backend/static/downloads.html" },
     { "source": "/hall-of-frauds", "destination": "/backend/static/hall_of_frauds.html" },
