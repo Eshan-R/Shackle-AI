@@ -1,0 +1,22 @@
+# Python Backend Files & Envs
+*.py
+backend/
+.venv/
+venv/
+__pycache__/
+
+# Secrets & Configs
+.env
+.env.*
+*.env
+
+# Non-Web Codebases
+desktop/
+mobile/
+
+# Container / Infrastructure
+Dockerfile
+docker-compose.yml
+.git/
+.vercelignore
+.gitignore
