@@ -8,6 +8,19 @@
     {
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
-    }
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "/backend/static/:path*"
+    },
+    { "source": "/", "destination": "/backend/static/dashboard.html" },
+    { "source": "/dashboard", "destination": "/backend/static/dashboard.html" },
+    { "source": "/checkout", "destination": "/backend/static/checkout.html" },
+    { "source": "/downloads", "destination": "/backend/static/downloads.html" },
+    { "source": "/hall-of-frauds", "destination": "/backend/static/frauds.html" },
+    { "source": "/privacy-policy", "destination": "/backend/static/privacy-policy.html" },
+    { "source": "/terms", "destination": "/backend/static/terms.html" },
+    { "source": "/refund-policy", "destination": "/backend/static/refund-policy.html" },
+    { "source": "/roadmap", "destination": "/backend/static/roadmap.html" }
   ]
 }
