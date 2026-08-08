@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "backend/static",
   "rewrites": [
     {
       "source": "/api/:path*",
@@ -8,10 +9,6 @@
     {
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }
