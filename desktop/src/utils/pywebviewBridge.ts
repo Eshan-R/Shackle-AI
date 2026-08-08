@@ -569,7 +569,7 @@ export const pywebviewBridge = {
       try {
         const sid = activeSessionId;
         const endResp = await fetch(
-          `http://0.0.0.0:8080/v1/session/end?user_id=${auth.currentUser.uid}&xp_earned=${xpEarned}&session_id=${sid}&duration_minutes=${sessionDurationMinutes}`,
+          `http://127.0.0.1:8080/v1/session/end?user_id=${auth.currentUser.uid}&xp_earned=${xpEarned}&session_id=${sid}&duration_minutes=${sessionDurationMinutes}`,
           { method: 'POST', signal: AbortSignal.timeout(5000) }
         );
         if (endResp.ok) {
@@ -820,7 +820,7 @@ export const pywebviewBridge = {
     
     // Standard client side query back-end (direct HTTP call to FastAPI)
     try {
-      const response = await fetch('http://0.0.0.0:8080/api/generate-report', {
+      const response = await fetch('http://127.0.0.1:8080/api/generate-report', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -905,7 +905,7 @@ export const pywebviewBridge = {
   getElevenLabsVoices: async (): Promise<{ name: string; id: string }[]> => {
     logIpc('out', 'get_elevenlabs_voices', {});
     try {
-      const response = await fetch('http://0.0.0.0:8080/v1/voices');
+      const response = await fetch('http://127.0.0.1:8080/v1/voices');
       if (!response.ok) throw new Error('Failed to fetch voices');
       const voices = await response.json();
       logIpc('in', 'get_elevenlabs_voices (Backend API)', voices);
@@ -919,7 +919,7 @@ export const pywebviewBridge = {
   playRoastStream: async (roastText: string, voiceId?: string): Promise<void> => {
     logIpc('out', 'play_roast_stream', { roastText, voiceId });
     try {
-      const response = await fetch('http://0.0.0.0:8080/v1/roast/stream', {
+      const response = await fetch('http://127.0.0.1:8080/v1/roast/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roast_text: roastText, voice_id: voiceId })

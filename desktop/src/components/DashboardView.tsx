@@ -505,7 +505,7 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
 
           <div className="w-full pt-4">
             <button
-              onClick={() => pywebviewBridge.openExternalLink('http://0.0.0.0:8080/static/checkout.html?user_id=' + encodeURIComponent(profile.username))}
+              onClick={() => pywebviewBridge.openExternalLink('http://127.0.0.1:8080/static/checkout.html?user_id=' + encodeURIComponent(profile.username))}
               className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-fuchsia-600 to-indigo-600 hover:from-red-500 hover:via-fuchsia-500 hover:to-indigo-500 text-white font-sans font-black text-sm tracking-widest uppercase rounded-2xl shadow-lg hover:shadow-fuchsia-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
             >
               Get Premium
@@ -633,7 +633,7 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
                       className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-sans font-bold tracking-tight rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 shadow-sm animate-pulse"
                     >
                       <span>⚠️</span>
-                      <span>Your Premium plan expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}. <a href="http://0.0.0.0:8080/v1/billing/checkout" target="_blank" rel="noreferrer" className="underline font-extrabold hover:text-rose-500 ml-1">Renew now</a></span>
+                      <span>Your Premium plan expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}. <a href="http://127.0.0.1:8080/v1/billing/checkout" target="_blank" rel="noreferrer" className="underline font-extrabold hover:text-rose-500 ml-1">Renew now</a></span>
                     </motion.div>
                   );
                 }

@@ -22,7 +22,7 @@ _webview_window = None
 
 
 class ShackleDaemon:
-    def __init__(self, session_id: str = "", user_id: str = "", api_url: str = "http://0.0.0.0:8080", stop_event: threading.Event = None,
+    def __init__(self, session_id: str = "", user_id: str = "", api_url: str = "http://127.0.0.1:8080", stop_event: threading.Event = None,
                  productive_app_distraction_threshold: float = 30.0):
         """Initializes the background orchestrator with thread-safe cached states."""
         self.session_id = session_id

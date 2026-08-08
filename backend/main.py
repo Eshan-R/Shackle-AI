@@ -125,6 +125,12 @@ app.add_middleware(
 os.makedirs(_STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=_STATIC_DIR), name="static")
 
+if _DIST_DIR:
+    _ASSETS_DIR = os.path.join(_DIST_DIR, "assets")
+    if os.path.isdir(_ASSETS_DIR):
+        app.mount("/assets", StaticFiles(directory=_ASSETS_DIR), name="assets")
+        print(f"[SYSTEM] React Vite assets mounted from {_ASSETS_DIR}")
+
 # =====================================================================
 # OAUTH CONFIGURATION & GLOBAL COORDINATOR
 # =====================================================================
@@ -1468,12 +1474,12 @@ def roadmap_page():
 def system_check():
     return {"engine": "Shackle AI Server Layer", "mesh_status": "Synchronized"}
 
-# ── SPA catch-all mount ──────────────────────────────────────────────────────
+# ── Root static & SPA catch-all mount ─────────────────────────────────────────
 # MUST be registered last — any app.get() or app.post() route declared above
-# will take priority over this mount.  html=True makes StaticFiles serve
-# index.html for paths that don't match a real file (React Router support).
+# will take priority over this mount. Serves favicon.svg, logo.png, and other
+# root-level assets, while html=True serves index.html for unmatched routes.
 if _DIST_DIR:
-    app.mount("/app", StaticFiles(directory=_DIST_DIR, html=True), name="spa")
-    print(f"[SYSTEM] React SPA assets mounted from {_DIST_DIR}")
+    app.mount("/", StaticFiles(directory=_DIST_DIR, html=True), name="dist_root")
+    print(f"[SYSTEM] React root dist mounted from {_DIST_DIR}")
 else:
     print("[WARNING] dist/ folder not found — React frontend assets will not be served.")

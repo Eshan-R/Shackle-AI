@@ -795,7 +795,7 @@ export default function ProfileView({
                       <p className="text-[10px] text-slate-455 dark:text-slate-500">Manage transaction histories, check subscription details securely via Razorpay.</p>
                     </div>
                     <button 
-                      onClick={() => pywebviewBridge.openExternalLink('http://0.0.0.0:8080/static/checkout.html?user_id=' + encodeURIComponent(profile.username))}
+                      onClick={() => pywebviewBridge.openExternalLink('http://127.0.0.1:8080/static/checkout.html?user_id=' + encodeURIComponent(profile.username))}
                       className="py-1.5 px-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-950 active:scale-95 transition-all cursor-pointer shadow-xs"
                     >
                       Open Payment Portal
