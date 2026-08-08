@@ -11,7 +11,6 @@
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
     },
     { "source": "/", "destination": "/dashboard.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/checkout", "destination": "/checkout.html" },
     { "source": "/downloads", "destination": "/downloads.html" },
     { "source": "/hall-of-frauds", "destination": "/hall_of_frauds.html" },
