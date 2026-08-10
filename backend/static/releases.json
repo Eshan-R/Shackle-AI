@@ -19,36 +19,6 @@
           "size": "129 MB"
         }
       ]
-    },
-    {
-      "version": "1.1.0",
-      "date": "2026-05-02",
-      "channel": "stable",
-      "latest": false,
-      "changelog": [
-        "Introduced Shackle Leagues competitive ranking",
-        "Book Mode: distraction-free posture verification without a screen"
-      ],
-      "builds": [
-        {
-          "platform": "windows",
-          "label": "Windows 10 / 11 (64-bit)",
-          "url": "https://github.com/your-org/shackle-ai/releases/download/v1.1.0/ShackleAI-Setup-1.1.0.exe",
-          "size": "139 MB"
-        },
-        {
-          "platform": "mac",
-          "label": "macOS 12+ (Apple Silicon & Intel)",
-          "url": "https://github.com/your-org/shackle-ai/releases/download/v1.1.0/ShackleAI-1.1.0.dmg",
-          "size": "135 MB"
-        },
-        {
-          "platform": "linux",
-          "label": "Linux (AppImage, x86_64)",
-          "url": "https://github.com/your-org/shackle-ai/releases/download/v1.1.0/ShackleAI-1.1.0.AppImage",
-          "size": "148 MB"
-        }
-      ]
     }
   ]
 }
