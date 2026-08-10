@@ -415,7 +415,7 @@
     let data;
     try {
       // With a relative path:
-      const res = await fetch('releases.json', { cache: 'no-store' });
+      // const res = await fetch('releases.json', { cache: 'no-store' });
       // Or if serving via backend static endpoint:
       const res = await fetch('/releases.json', { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
