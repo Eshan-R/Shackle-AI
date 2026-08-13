@@ -1,17 +1,46 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/dashboard",
-      "permanent": false
-    }
-  ],
   "rewrites": [
     {
       "source": "/",
-      "destination": "/backend/static/dashboard.html"
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/dashboard.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/dashboard.html"
+    },
+    {
+      "source": "/checkout",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/checkout.html"
+    },
+    {
+      "source": "/downloads",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/downloads.html"
+    },
+    {
+      "source": "/hall-of-frauds",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/hall_of_frauds.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/privacy-policy.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/terms.html"
+    },
+    {
+      "source": "/refund-policy",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/refund-policy.html"
+    },
+    {
+      "source": "/roadmap",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/roadmap.html"
+    },
+    {
+      "source": "/static/releases.json",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/releases.json"
     },
     {
       "source": "/api/:path*",
@@ -20,15 +49,6 @@
     {
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
-    },
-    { "source": "/dashboard", "destination": "/backend/static/dashboard.html" },
-    { "source": "/checkout", "destination": "/backend/static/checkout.html" },
-    { "source": "/downloads", "destination": "/backend/static/downloads.html" },
-    { "source": "/hall-of-frauds", "destination": "/backend/static/hall_of_frauds.html" },
-    { "source": "/privacy-policy", "destination": "/backend/static/privacy-policy.html" },
-    { "source": "/terms", "destination": "/backend/static/terms.html" },
-    { "source": "/refund-policy", "destination": "/backend/static/refund-policy.html" },
-    { "source": "/roadmap", "destination": "/backend/static/roadmap.html" },
-    { "source": "/static/releases.json", "destination": "/backend/static/releases.json" }
+    }
   ]
 }
