@@ -3,52 +3,16 @@
   "cleanUrls": true,
   "rewrites": [
     {
-      "source": "/",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/dashboard.html"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/dashboard.html"
-    },
-    {
-      "source": "/checkout",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/checkout.html"
-    },
-    {
-      "source": "/downloads",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/downloads.html"
-    },
-    {
-      "source": "/hall-of-frauds",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/hall_of_frauds.html"
-    },
-    {
-      "source": "/privacy-policy",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/privacy-policy.html"
-    },
-    {
-      "source": "/terms",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/terms.html"
-    },
-    {
-      "source": "/refund-policy",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/refund-policy.html"
-    },
-    {
-      "source": "/roadmap",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/roadmap.html"
-    },
-    {
-      "source": "/static/releases.json",
-      "destination": "https://api-backend-469575199115.asia-south1.run.app/backend/static/releases.json"
-    },
-    {
       "source": "/api/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/api/:path*"
     },
     {
       "source": "/v1/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/v1/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "https://api-backend-469575199115.asia-south1.run.app/:path*"
     }
   ]
 }
