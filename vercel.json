@@ -5,10 +5,14 @@
     {
       "source": "/",
       "destination": "/dashboard",
-      "permanent": true
+      "permanent": false
     }
   ],
   "rewrites": [
+    {
+      "source": "/",
+      "destination": "/backend/static/dashboard.html"
+    },
     {
       "source": "/api/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/api/:path*"
