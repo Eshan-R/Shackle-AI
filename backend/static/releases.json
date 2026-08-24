@@ -6,10 +6,14 @@
       "channel": "stable",
       "latest": true,
       "changelog": [
-        "Fixed session XP and streak occasionally resetting on next login",
-        "Roast audio now plays reliably during focus lockouts",
-        "Added AI-generated post-session coaching reports",
-        "Un-Shackled Sessions history now displays past sessions correctly"
+        "🚀 Official First Release (v1.0.0) of Shackle AI — your uncompromising AI-enforced focus assistant!",
+        "👀 Smart AI Attention Tracking — Uses your webcam to keep you accountable by detecting when you look away, check your phone, or leave your desk.",
+        "🚫 Automatic App & Distraction Blocker — Automatically closes distracting applications, games, and entertainment software during locked focus sessions.",
+        "🔊 AI Roasts & Voice Discipline — Plays sarcastic, AI-powered voice callouts to keep you focused whenever you get distracted.",
+        "🔥 Streaks, XP & Productivity Leagues — Earn XP for every focused minute, build daily streaks, and compete in Bronze, Silver, and Gold leagues.",
+        "📊 Post-Session AI Coaching Reports — Get detailed AI-generated feedback and insights at the end of each session to improve your focus habits.",
+        "📚 Dedicated Book Mode — Special low-threshold tracking tailored for reading, studying, and offline work without false alerts.",
+        "📜 Focus History & Analytics — Easily review past focus sessions, track your progress over time, and celebrate your streak records."
       ],
       "builds": [
         {
