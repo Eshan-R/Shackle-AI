@@ -177,6 +177,21 @@
       margin-top: 1px;
       font-size: 12px;
     }
+    .soon {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--accent);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+      font-size: 9.5px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      border: 1px solid var(--accent);
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .features li.is-soon { color: var(--muted); }
 
     .btn {
       width: 100%;
@@ -323,19 +338,14 @@
       <div class="stub-label">Clearance Includes</div>
       <ul class="features">
         <li><span class="check">[x]</span> Voice cloning — AI roasts delivered in your mentor's actual voice</li>
-        <li><span class="check">[x]</span> Ghost Mode — go invisible on the public leaderboard during chaotic weeks</li>
-        <li><span class="check">[x]</span> Bailout Card — reverse one catastrophic Strike 3 per week</li>
-        <li><span class="check">[x]</span> Focus Persona Analytics — weekly AI-generated performance deep-dive</li>
         <li><span class="check">[x]</span> Priority Gemini roast generation — faster, sharper, more personalized</li>
+        <li class="is-soon"><span class="soon">Soon</span> Ghost Mode — go invisible on the public leaderboard during chaotic weeks</li>
+        <li class="is-soon"><span class="soon">Soon</span> Bailout Card — reverse one catastrophic Strike 3 per week</li>
+        <li class="is-soon"><span class="soon">Soon</span> Focus Persona Analytics — weekly AI-generated performance deep-dive</li>
       </ul>
-
-      <button class="btn" id="pay-btn" disabled title="Premium checkout opens soon — join the waitlist below">
+      <button class="btn" id="pay-btn" onclick="startCheckout()">
         Pay $9.99 — Activate Premium
       </button>
-      <p class="waitlist-note">
-        Premium checkout isn't open yet.
-        <a href="https://forms.gle/7wWoJrGBikympojm7" target="_blank" rel="noopener">Join the waitlist →</a>
-      </p>
       <div class="error-msg" id="error-msg"></div>
       <p class="secure">Secured · Razorpay</p>
     </div>
