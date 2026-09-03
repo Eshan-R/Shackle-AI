@@ -4,7 +4,7 @@
       "version": "1.0.0",
       "date": "2026-08-08",
       "channel": "stable",
-      "latest": true,
+      "latest": false,
       "changelog": [
         "🚀 Official First Release (v1.0.0) of Shackle AI — your uncompromising AI-enforced focus assistant!",
         "👀 Smart AI Attention Tracking — Uses your webcam to keep you accountable by detecting when you look away, check your phone, or leave your desk.",
