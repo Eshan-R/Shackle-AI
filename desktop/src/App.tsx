@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { pywebviewBridge } from './utils/pywebviewBridge';
 import { UserProfile, TimerConfigurations, DisplaySettings } from './types';
+import { reconcileProfile } from './utils/trialUtils';
 import Navigation from './components/Navigation';
 import DashboardView from './components/DashboardView';
 import LetsShackleView from './components/LetsShackleView';
@@ -162,6 +163,23 @@ export default function App() {
     }
   }, [profileHydrated]);
 
+  // Helper: apply trial-day and streak-gap reconciliation once after profile load.
+  // OLD BROKEN BEHAVIOUR: days_remaining_in_trial was hardcoded to 7 forever;
+  // streak never reset when calendar days were skipped.
+  const applyReconciliation = useCallback(
+    (p: UserProfile): { profile: UserProfile; changed: boolean } => {
+      const result = reconcileProfile(p, Date.now());
+      if (!result.changed) return { profile: p, changed: false };
+      const reconciled: UserProfile = {
+        ...p,
+        billing_lifecycle: result.billing_lifecycle ?? p.billing_lifecycle,
+        streak: result.streak,
+      };
+      return { profile: reconciled, changed: true };
+    },
+    []
+  );
+
   // Monitor Auth Status changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -235,6 +253,14 @@ export default function App() {
               } else {
                 dbProfile.updatedAt = dbProfile.updatedAt ?? Date.now();
                 localStorage.setItem(LKEY_PROFILE, JSON.stringify(dbProfile));
+              }
+
+              // Reconcile trial days and streak gap before rendering.
+              const rec = applyReconciliation(dbProfile);
+              if (rec.changed) {
+                dbProfile = rec.profile;
+                console.log('[Auth] Reconciliation changed profile — persisting.', dbProfile);
+                try { await pywebviewBridge.saveProfile(dbProfile); } catch (_) {}
               }
 
               setProfile(dbProfile);
@@ -360,10 +386,14 @@ export default function App() {
                 }
               }
 
-              setProfile(fresh);
+              // Reconcile trial days and streak gap before rendering.
+              const freshRec = applyReconciliation(fresh);
+              const finalFresh = freshRec.changed ? freshRec.profile : fresh;
+
+              setProfile(finalFresh);
 
               try {
-                await pywebviewBridge.saveProfile(fresh);
+                await pywebviewBridge.saveProfile(finalFresh);
               } catch (bridgeErr) {
                 console.error("Failed to persist fresh profile via pywebviewBridge:", bridgeErr);
               }
@@ -436,6 +466,16 @@ export default function App() {
   const handleNavigate = (view: string) => {
     if (isFocusSessionRunning) return;
     
+    // Trial gate: when trial has expired, only Dashboard and Profile are accessible.
+    // All other tabs are blocked here so clicking them in Navigation does nothing.
+    // The paywall UI itself is rendered by DashboardView when billing.access_granted === false.
+    const billing = profile.billing_lifecycle;
+    const isTrialExpired = billing && !billing.access_granted && billing.status_code === 'TRIAL_EXPIRED';
+    const trialFreeViews = ['Dashboard', 'Profile'];
+    if (isTrialExpired && !trialFreeViews.includes(view)) {
+      return;
+    }
+
     // Check if lockout is active and user tries to go to Let's Shackle
     const lockdown = getLockdownStatus(profile);
     if (view === "Let's Shackle" && lockdown.isLockedOut) {
@@ -667,28 +707,41 @@ export default function App() {
         </header>
       )}
 
-      {/* Main Sidebar Drawer wrapper */}
-      {(firebaseUser || isGuestMode) && (
-        <div className={`fixed inset-0 md:relative z-30 transform md:transform-none transition-transform duration-300 flex ${
-          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}>
-          <Navigation 
-            currentView={currentView}
-            onNavigate={handleNavigate}
-            profile={profile}
-            onUpdateProfile={handleUpdateProfile}
-            theme={displaySettings.theme}
-            isFocusActive={isFocusSessionRunning}
-          />
-          {/* Backdrop overlay clicking out on mobile layouts view */}
-          {mobileMenuOpen && (
-            <div 
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 bg-slate-950/30 backdrop-blur-xs md:hidden"
-            />
-          )}
-        </div>
-      )}
+      {/* ── Derived access state ── */}
+      {(() => {
+        const billing = profile.billing_lifecycle;
+        const isTrialExpired = billing && !billing.access_granted && billing.status_code === 'TRIAL_EXPIRED';
+        const isNavLocked = !!isTrialExpired;
+
+        return (
+          <>
+            {/* Main Sidebar Drawer wrapper */}
+            {(firebaseUser || isGuestMode) && (
+              <div className={`fixed inset-0 md:relative z-30 transform md:transform-none transition-transform duration-300 flex ${
+                mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+              }`}>
+                <Navigation 
+                  currentView={currentView}
+                  onNavigate={handleNavigate}
+                  profile={profile}
+                  onUpdateProfile={handleUpdateProfile}
+                  theme={displaySettings.theme}
+                  isFocusActive={isFocusSessionRunning}
+                  isGuestMode={isGuestMode}
+                  isTrialExpired={isNavLocked}
+                />
+                {/* Backdrop overlay clicking out on mobile layouts view */}
+                {mobileMenuOpen && (
+                  <div 
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 bg-slate-950/30 backdrop-blur-xs md:hidden"
+                  />
+                )}
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Primary content card viewport */}
       <main className="flex-1 p-6 md:p-12 overflow-y-auto max-h-[100vh] scrollbar-thin">
@@ -740,32 +793,77 @@ export default function App() {
                   />
                 )}
 
-                {currentView === "Let's Shackle" && (
-                  <LetsShackleView 
-                    timerConfigs={timerConfigs}
-                    displaySettings={displaySettings}
-                    onSessionLogged={forceSyncProfile}
-                    onRunningChange={handleFocusRunningChange}
-                    profile={profile}
-                    onUpdateProfile={handleUpdateProfile}
-                    userId={firebaseUser?.uid}
-                  />
-                )}
+                {currentView === "Let's Shackle" && (() => {
+                  // Trial gate: expired users must never reach the timer — redirect to Dashboard paywall.
+                  const billing = profile.billing_lifecycle;
+                  const isTrialExpired = billing && !billing.access_granted && billing.status_code === 'TRIAL_EXPIRED';
+                  if (isTrialExpired) {
+                    return (
+                      <DashboardView
+                        onNavigate={handleNavigate}
+                        profile={profile}
+                        theme={displaySettings.theme}
+                        mode={displaySettings.mode}
+                        onUpdateProfile={handleUpdateProfile}
+                      />
+                    );
+                  }
+                  return (
+                    <LetsShackleView 
+                      timerConfigs={timerConfigs}
+                      displaySettings={displaySettings}
+                      onSessionLogged={forceSyncProfile}
+                      onRunningChange={handleFocusRunningChange}
+                      profile={profile}
+                      onUpdateProfile={handleUpdateProfile}
+                      userId={firebaseUser?.uid}
+                    />
+                  );
+                })()}
 
-                {currentView === 'Shackle Leagues' && (
+                {/* Bug 3 fix: Guests must never mount ShackleLeaguesView — they have no real
+                    ranked standing and the solo-view promotion logic produces meaningless results.
+                    OLD BROKEN BEHAVIOUR: isGuestMode was never checked here, so guests could
+                    freely navigate in and see a fabricated "promoted" message. */}
+                {currentView === 'Shackle Leagues' && !isGuestMode && (
                   <ShackleLeaguesView 
                     profile={profile}
                     onUpdateProfile={handleUpdateProfile}
                     displaySettings={displaySettings}
                   />
                 )}
-
-                {currentView === 'Un-Shackled Sessions' && (
-                  <UnshackledSessionsView 
-                    onClearAll={forceSyncProfile}
-                    sessionsUpdatedCounter={sessionsUpdatedCounter}
+                {currentView === 'Shackle Leagues' && isGuestMode && (
+                  // Redirect stale guest navigation to Dashboard
+                  <DashboardView
+                    onNavigate={handleNavigate}
+                    profile={profile}
+                    theme={displaySettings.theme}
+                    mode={displaySettings.mode}
+                    onUpdateProfile={handleUpdateProfile}
                   />
                 )}
+
+                {currentView === 'Un-Shackled Sessions' && (() => {
+                  const billing = profile.billing_lifecycle;
+                  const isTrialExpired = billing && !billing.access_granted && billing.status_code === 'TRIAL_EXPIRED';
+                  if (isTrialExpired) {
+                    return (
+                      <DashboardView
+                        onNavigate={handleNavigate}
+                        profile={profile}
+                        theme={displaySettings.theme}
+                        mode={displaySettings.mode}
+                        onUpdateProfile={handleUpdateProfile}
+                      />
+                    );
+                  }
+                  return (
+                    <UnshackledSessionsView 
+                      onClearAll={forceSyncProfile}
+                      sessionsUpdatedCounter={sessionsUpdatedCounter}
+                    />
+                  );
+                })()}
 
                 {currentView === 'Profile' && (
                   <ProfileView 

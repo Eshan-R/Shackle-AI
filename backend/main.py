@@ -1235,25 +1235,25 @@ def get_billing_user_status(user_id: str):
         }
     }
 
-@app.post("/v1/billing/simulate-success")
-def simulate_billing_success(user_id: str):
-    """
-    Directly promotes a user profile to Premium for 30 days in simulated/local test environments.
-    """
-    profile = ShackleDB.get_user(user_id) or {}
-    now = time.time()
-    profile["tier"] = "premium"
-    profile["premium_start_date"] = now
-    profile["premium_end_date"] = now + (30 * 86400)  # 30 days duration
-    profile["premium_reminder_sent"] = False
-    profile["billing_lifecycle"] = {
-        "access_granted": True,
-        "status_code": "PREMIUM_ACTIVE",
-        "days_remaining_in_trial": 0
-    }
-    ShackleDB.set_user(user_id, profile)
-    print(f"[BILLING SUCCESS] User {user_id} promoted to Premium (expires in 30 days).")
-    return {"status": "success", "message": f"User {user_id} promoted to Premium for 30 days."}
+# @app.post("/v1/billing/simulate-success")
+# def simulate_billing_success(user_id: str):
+#     """
+#     Directly promotes a user profile to Premium for 30 days in simulated/local test environments.
+#     """
+#     profile = ShackleDB.get_user(user_id) or {}
+#     now = time.time()
+#     profile["tier"] = "premium"
+#     profile["premium_start_date"] = now
+#     profile["premium_end_date"] = now + (30 * 86400)  # 30 days duration
+#     profile["premium_reminder_sent"] = False
+#     profile["billing_lifecycle"] = {
+#         "access_granted": True,
+#         "status_code": "PREMIUM_ACTIVE",
+#         "days_remaining_in_trial": 0
+#     }
+#     ShackleDB.set_user(user_id, profile)
+#     print(f"[BILLING SUCCESS] User {user_id} promoted to Premium (expires in 30 days).")
+#     return {"status": "success", "message": f"User {user_id} promoted to Premium for 30 days."}
 
 FALLBACK_EXCHANGE_RATES = {
     "USD": 1.0,

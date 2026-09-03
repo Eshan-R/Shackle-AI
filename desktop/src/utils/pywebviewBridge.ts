@@ -657,9 +657,32 @@ export const pywebviewBridge = {
     // 7. Save updated profile locally in localStorage (immediate availability)
     localStorage.setItem(LKEY_PROFILE, JSON.stringify(updatedProfile));
 
+    // 8. Push the new XP/streak/level to Firestore so the leaderboard reflects the
+    //    latest score immediately. Without this, fetchLeagueLeaderboard reads stale
+    //    Firestore data and the leaderboard ranking is wrong until the next full
+    //    saveProfile call (e.g. next app launch or profile edit).
+    if (auth.currentUser && isFocus && xpEarned > 0) {
+      try {
+        const userRef = doc(db, 'users', auth.currentUser.uid);
+        const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+        await updateDoc(userRef, {
+          xp: newXp,
+          streak: newStreak,
+          level: newLevel,
+          last_session_date: today,
+          updatedAt: Date.now(),
+        });
+        logIpc('in', 'add_session (Firestore XP Sync)', { newXp, newStreak, newLevel });
+      } catch (fsErr) {
+        // Non-fatal: leaderboard will self-correct on next full saveProfile
+        console.warn('[addSession] Firestore XP sync failed (leaderboard may be temporarily stale):', fsErr);
+      }
+    }
+
     logIpc('in', 'add_session (Success)', { newSession, newXp, newStreak, newLevel });
     return { session: newSession, newXp, newStreak, newLevel };
   },
+
 
 
 
@@ -835,29 +858,45 @@ export const pywebviewBridge = {
     let newTier = currentTier;
     let statusMessage = "";
 
-    // Scale the promotion/demotion cutoffs to however many real competitors exist,
-    // rather than assuming a fixed 30-player board.
-    const promotionCutoff = Math.max(1, Math.ceil(totalUsers * (10 / 30)));
-    const demotionCutoff = Math.max(promotionCutoff, totalUsers - Math.ceil(totalUsers * (5 / 30)));
+    // Activity bar: did the user actually log any focus sessions this cycle?
+    // We use xp > 0 OR at least one completed session as a proxy for "active cycle".
+    // TODO (owner to confirm): if a more precise "sessions logged this cycle" counter
+    // is added to the profile later, replace this heuristic with that field.
+    const hasActivity =
+      (profile.xp ?? 0) > 0 ||
+      (Array.isArray(profile.sessions) && profile.sessions.some((s: any) => s.completed && s.type === 'focus'));
 
-    if (totalUsers <= 1) {
-      statusMessage = `CYCLE CLOSED! You're the only registered competitor in the ${currentTier.toUpperCase()} LEAGUE this cycle — your position is secured until more competitors join.`;
-    } else if (userRank <= promotionCutoff) {
-      if (currentTierIndex < tiers.length - 1) {
-        newTier = tiers[currentTierIndex + 1];
-        statusMessage = `PROMOTED! You finished at Rank ${userRank} and moved up to the prestigious ${newTier.toUpperCase()} LEAGUE! 🎉 Keep up the fantastic focus sessions!`;
-      } else {
-        statusMessage = `CHAMPION! You finished at Rank ${userRank} and successfully defended your position in the supreme ${currentTier.toUpperCase()} LEAGUE! 🏆 Master of focus!`;
-      }
-    } else if (userRank > demotionCutoff) {
-      if (currentTierIndex > 0) {
-        newTier = tiers[currentTierIndex - 1];
-        statusMessage = `DEMOTED! You finished at Rank ${userRank} in the demotion zone and dropped to the ${newTier.toUpperCase()} LEAGUE. Push your limits next cycle!`;
-      } else {
-        statusMessage = `SURVIVED! You finished at Rank ${userRank} in the danger zone, but since you are already in the BRONZE LEAGUE, you stay here. Lock in next cycle!`;
-      }
+    if (!hasActivity) {
+      // Bug 2 fix: CYCLE CLOSED now means genuine inactivity (no sessions logged),
+      // NOT "nobody else is in the tier yet".
+      // OLD BROKEN BEHAVIOUR: when totalUsers <= 1, this branch fired unconditionally,
+      // preventing a solo user from ever being promoted regardless of performance.
+      statusMessage = `CYCLE CLOSED! No focus sessions were logged this cycle in the ${currentTier.toUpperCase()} LEAGUE — your position is unchanged. Get active next cycle!`;
     } else {
-      statusMessage = `SAFE ZONE! You finished at Rank ${userRank} of the leaderboard. Your position is secured in the ${currentTier.toUpperCase()} LEAGUE for the next cycle.`;
+      // Scale the promotion/demotion cutoffs to however many real competitors exist,
+      // rather than assuming a fixed 30-player board.
+      // A solo active user (totalUsers === 1, userRank === 1) will always satisfy
+      // userRank <= promotionCutoff (1 <= 1) and get promoted.
+      const promotionCutoff = Math.max(1, Math.ceil(totalUsers * (10 / 30)));
+      const demotionCutoff = Math.max(promotionCutoff, totalUsers - Math.ceil(totalUsers * (5 / 30)));
+
+      if (userRank <= promotionCutoff) {
+        if (currentTierIndex < tiers.length - 1) {
+          newTier = tiers[currentTierIndex + 1];
+          statusMessage = `PROMOTED! You finished at Rank ${userRank} and moved up to the prestigious ${newTier.toUpperCase()} LEAGUE! 🎉 Keep up the fantastic focus sessions!`;
+        } else {
+          statusMessage = `CHAMPION! You finished at Rank ${userRank} and successfully defended your position in the supreme ${currentTier.toUpperCase()} LEAGUE! 🏆 Master of focus!`;
+        }
+      } else if (userRank > demotionCutoff) {
+        if (currentTierIndex > 0) {
+          newTier = tiers[currentTierIndex - 1];
+          statusMessage = `DEMOTED! You finished at Rank ${userRank} in the demotion zone and dropped to the ${newTier.toUpperCase()} LEAGUE. Push your limits next cycle!`;
+        } else {
+          statusMessage = `SURVIVED! You finished at Rank ${userRank} in the danger zone, but since you are already in the BRONZE LEAGUE, you stay here. Lock in next cycle!`;
+        }
+      } else {
+        statusMessage = `SAFE ZONE! You finished at Rank ${userRank} of the leaderboard. Your position is secured in the ${currentTier.toUpperCase()} LEAGUE for the next cycle.`;
+      }
     }
 
     // Update the profile with new league and timestamp
@@ -870,9 +909,10 @@ export const pywebviewBridge = {
     // Save to Firestore and local storage via the bridge
     await pywebviewBridge.saveProfile(updatedProfile);
 
-    logIpc('in', 'reset_league_cycle (Real Standings)', { newTier, userRank, totalUsers });
+    logIpc('in', 'reset_league_cycle (Real Standings)', { newTier, userRank, totalUsers, hasActivity });
     return { statusMessage, newTier, userRank };
   },
+
 
   getAiReport: async (sessionArgs: { duration: number, preventsCount: number, completed: boolean, appNames: string[] }): Promise<string> => {
     const promptArgs = JSON.stringify(sessionArgs);

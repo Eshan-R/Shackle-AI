@@ -319,31 +319,40 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
     });
   };
 
-  const handleSimulateTrialExpiry = async () => {
-    const updated = {
-      ...profile,
-      billing_lifecycle: {
-        access_granted: false,
-        status_code: "TRIAL_EXPIRED" as const,
-        days_remaining_in_trial: 0
+  // Bug 1 fix: These debug handlers are now dev-only. In production they are dead code.
+  // OLD BROKEN BEHAVIOUR: these were the only two places in the entire codebase that ever
+  // changed billing_lifecycle — meaning trial expiry never happened automatically.
+  // The real expiry is now computed in trialUtils.reconcileProfile called from App.tsx.
+  const handleSimulateTrialExpiry = import.meta.env.DEV
+    ? async () => {
+        const updated = {
+          ...profile,
+          billing_lifecycle: {
+            access_granted: false,
+            status_code: "TRIAL_EXPIRED" as const,
+            days_remaining_in_trial: 0
+          }
+        };
+        await pywebviewBridge.saveProfile(updated);
+        if (onUpdateProfile) onUpdateProfile(updated);
       }
-    };
-    await pywebviewBridge.saveProfile(updated);
-    if (onUpdateProfile) onUpdateProfile(updated);
-  };
+    : undefined;
 
-  const handleSimulateRestoreTrial = async () => {
-    const updated = {
-      ...profile,
-      billing_lifecycle: {
-        access_granted: true,
-        status_code: "TRIAL_ACTIVE" as const,
-        days_remaining_in_trial: 10
+  const handleSimulateRestoreTrial = import.meta.env.DEV
+    ? async () => {
+        const updated = {
+          ...profile,
+          billing_lifecycle: {
+            access_granted: true,
+            status_code: "TRIAL_ACTIVE" as const,
+            days_remaining_in_trial: 10
+          }
+        };
+        await pywebviewBridge.saveProfile(updated);
+        if (onUpdateProfile) onUpdateProfile(updated);
       }
-    };
-    await pywebviewBridge.saveProfile(updated);
-    if (onUpdateProfile) onUpdateProfile(updated);
-  };
+    : undefined;
+
 
   const handleSimulateAddPermit = async () => {
     const gam = profile.gamification || { rest_permits: 2, rest_day_active: false };
@@ -505,7 +514,7 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
 
           <div className="w-full pt-4">
             <button
-              onClick={() => pywebviewBridge.openExternalLink('http://127.0.0.1:8080/static/checkout.html?user_id=' + encodeURIComponent(profile.username))}
+              onClick={() => pywebviewBridge.openExternalLink('https://shackle-ai.vercel.app/checkout?user_id=' + encodeURIComponent(profile.username))}
               className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-fuchsia-600 to-indigo-600 hover:from-red-500 hover:via-fuchsia-500 hover:to-indigo-500 text-white font-sans font-black text-sm tracking-widest uppercase rounded-2xl shadow-lg hover:shadow-fuchsia-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
             >
               Get Premium
@@ -633,7 +642,7 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
                       className="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-sans font-bold tracking-tight rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 shadow-sm animate-pulse"
                     >
                       <span>⚠️</span>
-                      <span>Your Premium plan expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}. <a href="http://127.0.0.1:8080/v1/billing/checkout" target="_blank" rel="noreferrer" className="underline font-extrabold hover:text-rose-500 ml-1">Renew now</a></span>
+                      <span>Your Premium plan expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}. <a href="https://shackle-ai.vercel.app/checkout" target="_blank" rel="noreferrer" className="underline font-extrabold hover:text-rose-500 ml-1">Renew now</a></span>
                     </motion.div>
                   );
                 }

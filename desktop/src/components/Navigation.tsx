@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { pywebviewBridge, subscribeToIpcLogs, IpcLog } from '../utils/pywebviewBridge';
-import { Play, Home, Trophy, ListCollapse, User, Settings, ShieldAlert, Terminal, Sparkles, Menu } from 'lucide-react';
+import { Play, Home, Trophy, ListCollapse, User, Settings, ShieldAlert, Terminal, Sparkles, Menu, Lock } from 'lucide-react';
 import { getStrikeCount, getStrikeColorPalette } from '../utils/strikeHelpers';
 import { getLockdownStatus } from '../utils/lockdownService';
 
@@ -20,9 +20,16 @@ interface NavigationProps {
   onUpdateProfile?: (p: UserProfile) => void;
   theme?: 'Granite Beige' | 'Midnight Slate' | 'Deep Plum';
   isFocusActive?: boolean;
+  // Bug 3 fix: isGuestMode controls whether Shackle Leagues appears locked.
+  // OLD BROKEN BEHAVIOUR: isGuestMode was never passed here, so guests could
+  // click into Shackle Leagues and get a meaningless "promoted" result.
+  isGuestMode?: boolean;
+  // Trial gate: when isTrialExpired is true, all non-Dashboard/Profile tabs are
+  // locked-but-visible so the user knows the feature exists behind a paywall.
+  isTrialExpired?: boolean;
 }
 
-export default function Navigation({ currentView, onNavigate, profile, onUpdateProfile, theme = 'Granite Beige', isFocusActive = false }: NavigationProps) {
+export default function Navigation({ currentView, onNavigate, profile, onUpdateProfile, theme = 'Granite Beige', isFocusActive = false, isGuestMode = false, isTrialExpired = false }: NavigationProps) {
   const [ipcLogs, setIpcLogs] = useState<string[]>([]);
   const [showTerminal, setShowTerminal] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -134,12 +141,19 @@ export default function Navigation({ currentView, onNavigate, profile, onUpdateP
               const isActive = currentView === item.name;
               const Icon = item.icon;
               const isShackleLocked = item.name === "Let's Shackle" && lockdown.isLockedOut;
-              const isDisabled = (isFocusActive && !isActive) || isShackleLocked;
+              // Bug 3 fix: Shackle Leagues is locked-but-visible for guests.
+              // Locked-but-visible is better UX than silently hiding the nav item.
+              const isLeaguesGuestLocked = item.name === 'Shackle Leagues' && isGuestMode;
+              // Trial gate: all non-Dashboard/Profile items are locked when trial expires.
+              const trialFreeItems = ['Dashboard', 'Profile'];
+              const isTrialLocked = isTrialExpired && !trialFreeItems.includes(item.name);
+              const isDisabled = (isFocusActive && !isActive) || isShackleLocked || isLeaguesGuestLocked || isTrialLocked;
               return (
                 <button
                   key={item.name}
                   disabled={isDisabled}
                   onClick={() => !isDisabled && onNavigate(item.name)}
+                  title={isLeaguesGuestLocked ? 'Sign in to access Shackle Leagues' : undefined}
                   className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center gap-3.5 group border ${
                     isActive
                       ? 'bg-blue-600 border-blue-500 text-white font-semibold shadow-sm'
@@ -148,11 +162,25 @@ export default function Navigation({ currentView, onNavigate, profile, onUpdateP
                         : 'text-slate-400 border-transparent hover:bg-slate-800 hover:text-slate-100 cursor-pointer'
                   }`}
                 >
-                  <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : isDisabled ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-300'}`} />
+                  {isLeaguesGuestLocked
+                    ? <Lock className="w-4.5 h-4.5 text-slate-600" />
+                    : isTrialLocked
+                      ? <Lock className="w-4.5 h-4.5 text-slate-600" />
+                      : <Icon className={`w-4.5 h-4.5 ${isActive ? 'text-white' : isDisabled ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-300'}`} />}
                   <div className="flex flex-col">
                     <span className="text-xs font-sans font-medium flex items-center gap-1.5">
                       {item.name}
-                      {isDisabled && !isActive && (
+                      {isLeaguesGuestLocked && (
+                        <span className="text-[8px] px-1 rounded border uppercase font-mono tracking-wider font-bold bg-slate-800 border-slate-700 text-slate-400">
+                          SIGN IN
+                        </span>
+                      )}
+                      {isTrialLocked && !isLeaguesGuestLocked && (
+                        <span className="text-[8px] px-1 rounded border uppercase font-mono tracking-wider font-bold bg-red-950/50 border-red-900/60 text-red-400">
+                          TRIAL ENDED
+                        </span>
+                      )}
+                      {isDisabled && !isActive && !isLeaguesGuestLocked && !isTrialLocked && (
                         <span className={`text-[8px] px-1 rounded border uppercase font-mono tracking-wider font-bold ${
                           isShackleLocked 
                             ? 'bg-red-950/50 border-red-900/60 text-red-400' 
@@ -163,11 +191,15 @@ export default function Navigation({ currentView, onNavigate, profile, onUpdateP
                       )}
                     </span>
                     <span className={`text-[9px] font-mono leading-none ${isActive ? 'text-blue-200/90' : isDisabled ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-400'}`}>
-                      {isShackleLocked 
-                        ? 'Locked: 72h Penalty' 
-                        : isFocusActive && !isActive 
-                          ? 'Focus Lockout Active' 
-                          : item.desc}
+                      {isLeaguesGuestLocked
+                        ? 'Sign in to compete'
+                        : isTrialLocked
+                          ? 'Upgrade to Premium'
+                          : isShackleLocked 
+                            ? 'Locked: 72h Penalty' 
+                            : isFocusActive && !isActive 
+                              ? 'Focus Lockout Active' 
+                              : item.desc}
                     </span>
                   </div>
                 </button>

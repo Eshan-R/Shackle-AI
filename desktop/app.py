@@ -228,7 +228,22 @@ def main():
     external_link_handler = ExternalLinkHandler()
     window.expose(external_link_handler.open_external_link)
 
-    webview.start(debug=False)
+    # Configure persistent WebView2 user data folder so Firebase Auth (IndexedDB/localStorage)
+    # and session credentials persist across app restarts instead of running in a temporary incognito profile.
+    storage_dir = os.path.join(
+        os.environ.get('APPDATA', os.path.expanduser('~')),
+        'ShackleAI',
+        'webview_data'
+    )
+    os.makedirs(storage_dir, exist_ok=True)
+
+    # Disable background timer throttling for background telemetry and timer loops
+    existing_args = os.environ.get('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '')
+    throttle_flags = '--disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding'
+    if throttle_flags not in existing_args:
+        os.environ['WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS'] = f"{existing_args} {throttle_flags}".strip()
+
+    webview.start(debug=False, private_mode=False, storage_path=storage_dir)
 
     print("\n[SYSTEM] Desktop window close intercepted. Initiating safe teardown...")
     shutdown_event.set()
