@@ -1180,8 +1180,14 @@ def get_billing_config():
     Returns public Razorpay key and the exact billing baseline for the checkout engine.
     Configured for exactly $9.99 USD (999 cents).
     """
+    key_id = (
+        os.environ.get("VITE_RAZORPAY_KEY_ID")
+        or os.environ.get("NEXT_PUBLIC_RAZORPAY_KEY_ID")
+        or os.environ.get("RAZORPAY_KEY_ID")
+        or "rzp_test_placeholder"
+    )
     return {
-        "key_id": os.environ.get("RAZORPAY_KEY_ID", "rzp_test_placeholder"),
+        "key_id": key_id,
         "currency": "USD",
         "amount_cents": 999,  # $9.99 represented in the smallest currency unit
         "plan_name": "Shackle AI Premium — Monthly Access"
@@ -1288,7 +1294,11 @@ def create_razorpay_order(user_id: str, currency: str = "USD", amount_cents: int
     if not RAZORPAY_AVAILABLE:
         raise HTTPException(status_code=503, detail="Razorpay SDK context unavailable.")
 
-    key_id = os.environ.get("RAZORPAY_KEY_ID")
+    key_id = (
+        os.environ.get("VITE_RAZORPAY_KEY_ID")
+        or os.environ.get("NEXT_PUBLIC_RAZORPAY_KEY_ID")
+        or os.environ.get("RAZORPAY_KEY_ID")
+    )
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET")
     if not key_id or not key_secret:
         raise HTTPException(status_code=503, detail="Razorpay environmental authorization keys missing.")
@@ -1354,7 +1364,12 @@ async def process_razorpay_event(request: Request, x_razorpay_signature: str = H
             raise HTTPException(status_code=400, detail="Missing mandatory verification signature header.")
         
         try:
-            client = razorpay_sdk.Client(auth=(os.environ.get("RAZORPAY_KEY_ID"), os.environ.get("RAZORPAY_KEY_SECRET")))
+            resolved_key_id = (
+                os.environ.get("VITE_RAZORPAY_KEY_ID")
+                or os.environ.get("NEXT_PUBLIC_RAZORPAY_KEY_ID")
+                or os.environ.get("RAZORPAY_KEY_ID")
+            )
+            client = razorpay_sdk.Client(auth=(resolved_key_id, os.environ.get("RAZORPAY_KEY_SECRET")))
             # Use official verification methods to eliminate serialization bugs
             client.utility.verify_webhook_signature(body_string, x_razorpay_signature, webhook_secret)
         except Exception:

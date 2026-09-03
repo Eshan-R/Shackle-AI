@@ -644,12 +644,28 @@
     errorEl.style.display = 'none';
 
     try {
-      // Get payment config from backend
-      const cfgRes = await fetch('/v1/billing/config');
-      const cfg = await cfgRes.json();
+      // 1. Resolve public Razorpay Key from environment (Vite: VITE_RAZORPAY_KEY_ID / Next.js: NEXT_PUBLIC_RAZORPAY_KEY_ID)
+      // or from server billing config.
+      let keyId = (typeof window !== 'undefined' && (window.VITE_RAZORPAY_KEY_ID || window.NEXT_PUBLIC_RAZORPAY_KEY_ID || window.RAZORPAY_KEY_ID)) ||
+                  (typeof process !== 'undefined' && process.env && (process.env.VITE_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID)) ||
+                  null;
 
-      if (!cfg.key_id) {
-        throw new Error('Payment gateway not configured on this server. Contact the admin.');
+      if (!keyId || keyId === 'rzp_test_placeholder') {
+        try {
+          const cfgRes = await fetch('/v1/billing/config');
+          if (cfgRes.ok) {
+            const cfg = await cfgRes.json();
+            if (cfg.key_id && cfg.key_id !== 'rzp_test_placeholder') {
+              keyId = cfg.key_id;
+            }
+          }
+        } catch (cfgErr) {
+          console.warn("Could not retrieve billing config from server:", cfgErr);
+        }
+      }
+
+      if (!keyId || keyId === 'rzp_test_placeholder') {
+        throw new Error('Razorpay environmental authorization keys missing.');
       }
 
       // Create order with the detected currency and amount
@@ -666,7 +682,7 @@
       }
 
       const options = {
-        key: cfg.key_id,
+        key: keyId,
         amount: order.amount,      // Converted amount returned from server order
         currency: order.currency,  // Currency returned from server order
         name: 'Shackle AI',
