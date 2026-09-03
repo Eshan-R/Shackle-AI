@@ -1,11 +1,11 @@
 [Setup]
 AppName=Shackle AI
-AppVersion=1.0.0
+AppVersion=1.0.1
 AppPublisher=Eshan R
 DefaultDirName={autopf}\Shackle AI
 DefaultGroupName=Shackle AI
 OutputDir=dist_installer
-OutputBaseFilename=Shackle-AI-Setup-v1.0.0
+OutputBaseFilename=Shackle-AI-Setup-v1.0.1
 SetupIconFile=logo.ico
 UninstallDisplayIcon={app}\ShackleAI.exe
 Compression=lzma2

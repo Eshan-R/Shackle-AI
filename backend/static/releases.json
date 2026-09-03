@@ -23,6 +23,29 @@
           "size": "129 MB"
         }
       ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "2026-09-03",
+      "channel": "stable",
+      "latest": true,
+      "changelog": [
+        "🔑 Persistent Login — Fixed session clearing on close; Google accounts and settings now persist permanently.",
+        "⚡ Unthrottled Performance — Added background renderer flags to prevent timer and telemetry throttling when minimized.",
+        "⏱️ Dynamic Trial Lifecycle — Real-time 7-day trial calculation and strict paywall gating across all app tabs.",
+        "🔥 Accurate Streak Tracking — Robust calendar-day streak gap calculation with full Rest Protocol protection.",
+        "🏆 League Promotion Fixes — Unlocked tier promotion for solo competitors and added real-time Firestore leaderboard XP sync.",
+        "🛡️ Guest Mode Gating — Locked-but-visible UI indicators for Shackle Leagues in guest mode.",
+        "💳 Production Checkout Integration — Direct in-app links to the official payment and renewal portal."
+      ],
+      "builds": [
+        {
+          "platform": "windows",
+          "label": "Windows 10 / 11 (64-bit)",
+          "url": "https://github.com/Eshan-R/Shackle-AI/releases/download/v1.0.1/Shackle-AI-Setup-v1.0.1.exe",
+          "size": "130 MB"
+        }
+      ]
     }
   ]
 }
