@@ -108,6 +108,7 @@ function safeParse<T>(key: string, fallback: T): T {
 function buildDefaultProfile(): UserProfile {
   const user = auth.currentUser;
   return {
+    _isBaselinePlaceholder: true,
     username: user
       ? `@${(user.email?.split('@')[0] || 'unshackler').replace(/[^a-zA-Z0-9_\-+]/g, '')}`
       : 'guest',
@@ -210,6 +211,7 @@ export type ProfileResult =
 // Helper to check if a profile is an un-hydrated default/guest placeholder profile
 export function isPlaceholderProfile(p: UserProfile | null | undefined): boolean {
   if (!p) return true;
+  if (p._isBaselinePlaceholder) return true;
   const placeholderUsernames = ['guest', 'guest_user', '@guest', ''];
   const placeholderNames = ['Guest', 'Guest Unshackler', ''];
   const username = (p.username || '').toLowerCase().trim();
@@ -300,6 +302,26 @@ export const pywebviewBridge = {
     console.log('[saveProfile] Called with profile:', incomingProfile);
     logIpc('out', 'save_profile', incomingProfile);
 
+    // Hard backstop: never persist transient baseline seed profiles to Firestore
+    if (incomingProfile._isBaselinePlaceholder) {
+      console.warn(
+        '[saveProfile] Refusing Firestore write: incomingProfile is marked as _isBaselinePlaceholder. Returning remote/existing profile.',
+        incomingProfile
+      );
+      if (auth.currentUser) {
+        try {
+          const remoteDoc = await fetchUserProfile(auth.currentUser.uid);
+          if (remoteDoc) {
+            localStorage.setItem(LKEY_PROFILE, JSON.stringify(remoteDoc));
+            return remoteDoc;
+          }
+        } catch (fetchErr) {
+          console.warn('[saveProfile] Failed to fetch remote profile during baseline refusal:', fetchErr);
+        }
+      }
+      return incomingProfile;
+    }
+
     let profileToSave = incomingProfile;
 
     if (auth.currentUser) {
@@ -321,9 +343,23 @@ export const pywebviewBridge = {
             return remote;
           }
 
+          const incomingBilling = incomingProfile.billing_lifecycle;
+          const hasValidIncomingBilling = !!(
+            incomingBilling &&
+            incomingBilling.status_code !== undefined &&
+            incomingBilling.days_remaining_in_trial !== undefined &&
+            incomingBilling.access_granted !== undefined
+          );
+
           profileToSave = {
             ...remote,
             ...incomingProfile,
+            // Protect createdAt: existing Firestore value always wins; only fall back to incoming for a new account with no remote doc
+            createdAt: remote.createdAt ?? incomingProfile.createdAt,
+            // Protect billing_lifecycle: incoming wins only if valid, otherwise keep remote's authoritative lifecycle
+            billing_lifecycle: hasValidIncomingBilling
+              ? incomingBilling
+              : (remote.billing_lifecycle ?? incomingBilling),
             username: (!isPlaceholderProfile(incomingProfile) && incomingProfile.username)
               ? incomingProfile.username
               : (remote.username || incomingProfile.username),
@@ -347,16 +383,34 @@ export const pywebviewBridge = {
             last_session_date: incomingProfile.last_session_date ?? remote.last_session_date ?? null,
             updatedAt: Date.now(),
           };
+          delete profileToSave._isBaselinePlaceholder;
           console.log('[saveProfile] Safe-merged profile result:', profileToSave);
         } else {
           // 🛡️ Guard 2: Postpone Firestore write if user is signed in but incomingProfile is still a default placeholder and no remote doc exists yet
-          if (isPlaceholderProfile(incomingProfile)) {
+          if (isPlaceholderProfile(incomingProfile) || incomingProfile._isBaselinePlaceholder) {
             console.warn(
               '[saveProfile] Postponing Firestore sync: user is authenticated but profile is default placeholder and no remote doc exists yet.',
               incomingProfile
             );
             localStorage.setItem(LKEY_PROFILE, JSON.stringify(incomingProfile));
             return incomingProfile;
+          }
+          delete profileToSave._isBaselinePlaceholder;
+        }
+
+        // Instrument to confirm differences between remote and incomingProfile for createdAt and billing_lifecycle
+        if (remote) {
+          const createdAtDiffers = remote.createdAt !== incomingProfile.createdAt;
+          const billingDiffers = JSON.stringify(remote.billing_lifecycle) !== JSON.stringify(incomingProfile.billing_lifecycle);
+          if (createdAtDiffers || billingDiffers) {
+            console.log('[saveProfile:FieldAudit] Discrepancy detected between remote and incomingProfile:', {
+              remoteCreatedAt: remote.createdAt,
+              incomingCreatedAt: incomingProfile.createdAt,
+              effectiveSavedCreatedAt: profileToSave.createdAt,
+              remoteBilling: remote.billing_lifecycle,
+              incomingBilling: incomingProfile.billing_lifecycle,
+              effectiveSavedBilling: profileToSave.billing_lifecycle,
+            });
           }
         }
 
@@ -586,7 +640,12 @@ export const pywebviewBridge = {
     const isPhase2 = currentProfile.penalty_phase === 2;
 
     // 3. Compute baseline local stat increments
-    let newXp = (currentProfile.xp || 0) + xpEarned;
+    const beforeXp = currentProfile.xp || 0;
+    const strikeCount = typeof currentProfile.strikes === 'number'
+      ? currentProfile.strikes
+      : (typeof newSession.strikes === 'number' ? newSession.strikes : 0);
+    console.log(`[XP_AUDIT_FRONTEND] addSession: user_id=${auth.currentUser?.uid || 'guest'} session_id=${activeSessionId} | beforeXp=${beforeXp} deltaXp=${xpEarned} strikes=${strikeCount}`);
+    let newXp = beforeXp + xpEarned;
     let newStreak = currentProfile.streak || 0;
     if (newSession.completed && isFocus) {
       if (!isPhase2 || sessionDurationMinutes >= 30) {
@@ -626,6 +685,7 @@ export const pywebviewBridge = {
     if (auth.currentUser && isFocus && activeSessionId) {
       try {
         const sid = activeSessionId;
+        console.log(`[XP_AUDIT_FRONTEND] Calling /v1/session/end: sid=${sid} xp_earned=${xpEarned} duration=${sessionDurationMinutes}`);
         const endResp = await fetch(
           `http://127.0.0.1:8080/v1/session/end?user_id=${auth.currentUser.uid}&xp_earned=${xpEarned}&session_id=${sid}&duration_minutes=${sessionDurationMinutes}`,
           { method: 'POST', signal: AbortSignal.timeout(5000) }
@@ -665,6 +725,7 @@ export const pywebviewBridge = {
       try {
         const userRef = doc(db, 'users', auth.currentUser.uid);
         const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+        console.log(`[XP_AUDIT_FIRESTORE] updateDoc XP write: user_id=${auth.currentUser.uid} | newXp=${newXp} deltaXp=${xpEarned} strikes=${strikeCount}`);
         await updateDoc(userRef, {
           xp: newXp,
           streak: newStreak,

@@ -33,6 +33,7 @@ const LKEY_PROFILE = "shackle_profile";
 function buildBaselineProfile(): UserProfile {
   const user = auth.currentUser;
   return {
+    _isBaselinePlaceholder: true,
     username: user
       ? `@${(user.email?.split('@')[0] || 'unshackler').replace(/[^a-zA-Z0-9_\-+]/g, '')}`
       : 'guest_user',
@@ -54,6 +55,7 @@ function buildBaselineProfile(): UserProfile {
 
 
 const isPlaceholderProfile = (p: UserProfile): boolean => {
+  if (p._isBaselinePlaceholder) return true;
   const placeholderUsernames = ['guest', 'guest_user', '@guest', ''];
   const placeholderNames = ['Guest', 'Guest Unshackler', ''];
   const username = (p.username || '').toLowerCase().trim();
@@ -126,7 +128,7 @@ export default function App() {
         spread: 80,
         origin: { y: 0.6 }
       });
-      if (profile) {
+      if (profile && !profile._isBaselinePlaceholder && !isPlaceholderProfile(profile)) {
         const upgraded: UserProfile = {
           ...profile,
           tier: 'premium',
@@ -151,8 +153,8 @@ export default function App() {
       localStorage.setItem(LKEY_PROFILE, JSON.stringify(newProfile));
       return;
     }
-    if (auth.currentUser && isPlaceholderProfile(newProfile)) {
-      console.warn('[App] Skipping Firestore write for placeholder profile.');
+    if (newProfile._isBaselinePlaceholder || (auth.currentUser && isPlaceholderProfile(newProfile))) {
+      console.warn('[App] Skipping Firestore write for placeholder/baseline profile.');
       localStorage.setItem(LKEY_PROFILE, JSON.stringify(newProfile));
       return;
     }
@@ -188,6 +190,7 @@ export default function App() {
         setIsGuestMode(false);
         localStorage.removeItem('shackle_guest_mode');
         setProfileHydrated(false);
+        setCurrentView('Dashboard');
 
         try {
           const result = await pywebviewBridge.getProfile(user.uid);
@@ -407,6 +410,7 @@ export default function App() {
         }
       } else {
         setProfileHydrated(false);
+        setCurrentView('Dashboard');
       }
     });
     return unsubscribe;

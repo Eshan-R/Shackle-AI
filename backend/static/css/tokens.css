@@ -1,0 +1,430 @@
+/* =====================================================================
+   SHACKLE AI — UNIFIED DESIGN TOKENS & SYSTEM STYLES
+   Tokens, Typography, Sidebar Rail Navigation, Auth Slot & Responsive Layout
+   ===================================================================== */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root, html[data-theme="light"] {
+  --ink: #f2ede1;
+  --surface: #e9e2cf;
+  --card-bg: #e2dac4;
+  --rule: #d9d0b8;
+  --rule-dim: rgba(217, 208, 184, 0.55);
+  --accent: #2f6fb3;
+  --accent-dim: rgba(47, 111, 179, 0.10);
+  --accent-tint: rgba(47, 111, 179, 0.06);
+  --btn-text: #f2ede1;
+  --text: #23211b;
+  --text-2: #55503f;
+  --muted: #8a8371;
+  --ghost: rgba(0, 0, 0, 0.05);
+  --card-fff: #1c1a15;
+
+  /* Status Colors */
+  --green: #2d8a57;
+  --green-tint: rgba(45, 138, 87, 0.12);
+  --amber: #b07415;
+  --amber-tint: rgba(176, 116, 21, 0.12);
+  --red: #c0392b;
+  --red-tint: rgba(192, 57, 43, 0.12);
+  --blue: #2f6fb3;
+  --blue-tint: rgba(47, 111, 179, 0.12);
+
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-sans: 'IBM Plex Sans', sans-serif;
+}
+
+html[data-theme="dark"] {
+  --ink: #0b0d10;
+  --surface: #14171b;
+  --card-bg: #1c2026;
+  --rule: #262a2f;
+  --rule-dim: rgba(38, 42, 47, 0.6);
+  --accent: #4f8fd6;
+  --accent-dim: rgba(79, 143, 214, 0.12);
+  --accent-tint: rgba(79, 143, 214, 0.08);
+  --btn-text: #0b0d10;
+  --text: #d7dade;
+  --text-2: #aeb2b8;
+  --muted: #6b7178;
+  --ghost: rgba(255, 255, 255, 0.045);
+  --card-fff: #ffffff;
+
+  /* Status Colors */
+  --green: #45b778;
+  --green-tint: rgba(69, 183, 120, 0.14);
+  --amber: #e09b2d;
+  --amber-tint: rgba(224, 155, 45, 0.14);
+  --red: #e74c3c;
+  --red-tint: rgba(231, 76, 60, 0.16);
+  --blue: #4f8fd6;
+  --blue-tint: rgba(79, 143, 214, 0.14);
+}
+
+html, body {
+  background: var(--ink);
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* =====================================================================
+   APP FRAME & RESPONSIVE NAVIGATION RAIL
+   ===================================================================== */
+.frame {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.rail {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--rule);
+  padding: 32px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.rail-mark {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  transition: color 0.15s;
+}
+
+.rail-mark:hover {
+  color: var(--accent);
+}
+
+.rail-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tab {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  padding: 9px 10px;
+  color: var(--muted);
+  border-left: 2px solid transparent;
+  transition: all 0.15s ease;
+  display: block;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--ghost);
+}
+
+.tab.is-active {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-left: 2px solid var(--accent);
+  font-weight: 700;
+}
+
+.rail-group-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--muted);
+  opacity: 0.7;
+  padding: 12px 10px 4px 10px;
+  text-transform: uppercase;
+}
+
+/* Stamp motif */
+.stamp {
+  align-self: flex-start;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-align: center;
+  padding: 8px 12px;
+  transform: rotate(-3deg);
+  line-height: 1.5;
+  opacity: 0.85;
+  margin-top: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  text-transform: uppercase;
+  transition: border-color 0.15s, color 0.15s;
+  width: 100%;
+  border-radius: 2px;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* =====================================================================
+   SITE-WIDE AUTHENTICATION SLOT
+   ===================================================================== */
+#auth-slot, .auth-slot {
+  width: 100%;
+}
+
+.auth-signin-box {
+  width: 100%;
+}
+
+.auth-action-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 9px 12px;
+  border-radius: 2px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  transition: all 0.15s ease;
+}
+
+.auth-signin-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--rule);
+}
+
+.auth-signin-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.auth-g-icon {
+  flex-shrink: 0;
+}
+
+.auth-user-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+  background: var(--ghost);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+
+.auth-user-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.auth-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.auth-avatar-fallback {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-text-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.auth-display-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.5px;
+}
+
+.auth-sub-badge {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--green);
+}
+
+.auth-signout-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  padding: 5px 8px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+}
+
+.auth-signout-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+  background: var(--red-tint);
+}
+
+/* =====================================================================
+   MOBILE COLLAPSE RESPONSIVENESS (<= 760px)
+   ===================================================================== */
+@media (max-width: 760px) {
+  .frame {
+    flex-direction: column;
+  }
+
+  .rail {
+    width: 100%;
+    height: auto;
+    position: sticky;
+    top: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    padding: 10px 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  .rail-mark {
+    font-size: 11px;
+    letter-spacing: 2px;
+    flex-shrink: 0;
+  }
+
+  .rail-tabs {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    flex-shrink: 1;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 6px 8px;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+    flex-shrink: 0;
+  }
+
+  .tab.is-active {
+    border-left: none;
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .rail-group-label {
+    padding: 0 4px;
+    font-size: 8px;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+  }
+
+  .stamp {
+    display: none;
+  }
+
+  #auth-slot, .auth-slot {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .auth-user-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+  }
+
+  .auth-text-meta {
+    display: none;
+  }
+
+  .auth-action-btn {
+    width: auto;
+    padding: 5px 8px;
+    font-size: 9px;
+  }
+
+  .theme-toggle {
+    width: auto;
+    padding: 5px 8px;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+}

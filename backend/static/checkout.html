@@ -6,6 +6,7 @@
   <title>Shackle AI — Upgrade to Premium</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/tokens.css">
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
   </script>
@@ -41,26 +42,24 @@
     }
 
     body {
-      background:
-        radial-gradient(circle at 15% 10%, rgba(47,111,179,0.06), transparent 45%),
-        var(--ink);
+      background: var(--ink);
       color: var(--text-2);
       font-family: 'IBM Plex Sans', sans-serif;
       min-height: 100vh;
+    }
+
+    .checkout-main {
+      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .top-bar {
-      max-width: 440px;
-      width: 100%;
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 10px;
+      padding: 40px 20px;
+      min-height: 100vh;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(47,111,179,0.06), transparent 45%),
+        var(--ink);
     }
     .theme-toggle {
       font-family: 'IBM Plex Mono', monospace;
@@ -311,15 +310,89 @@
       margin-right: 8px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Auth Gate ── */
+    .auth-gate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 40px 32px;
+      text-align: center;
+    }
+    .auth-gate p {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 320px;
+    }
+    .google-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .google-btn:hover { border-color: var(--accent); background: var(--ink); }
+    .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .auth-loading {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
   </style>
 </head>
 <body>
+<div class="frame">
+  <aside class="rail">
+    <a href="/dashboard" class="rail-mark">⛓ SHACKLE AI</a>
+    <nav class="rail-tabs">
+      <a href="/dashboard" class="tab">DASHBOARD</a>
+      <a href="/checkout" class="tab is-active">GO PREMIUM</a>
+      <a href="/hall-of-frauds" class="tab">HALL OF FRAUDS</a>
+      <a href="/roadmap" class="tab">ROADMAP</a>
+      <a href="/downloads" class="tab">DOWNLOADS</a>
+      <div class="rail-group-label">LEGAL</div>
+      <a href="/privacy-policy" class="tab">PRIVACY</a>
+      <a href="/terms" class="tab">TERMS</a>
+      <a href="/refund-policy" class="tab">REFUND</a>
+    </nav>
+    <div id="auth-slot"></div>
+    <div class="stamp">ENFORCEMENT<br>VERIFIED<br>2026</div>
+    <button type="button" class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Theme: Light</button>
+  </aside>
 
-<div class="top-bar">
-  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
+  <main class="checkout-main">
+
+<!-- Auth Gate: shown while loading / signed out -->
+<div id="auth-gate" class="card">
+  <div class="auth-gate">
+    <div class="logo" style="justify-content: center; margin-bottom: 0;"><span>⛓ SHACKLE AI</span></div>
+    <p id="auth-gate-msg" class="auth-loading">Verifying session…</p>
+    <button id="google-sign-in-btn" class="google-btn" onclick="signInWithGoogle()" style="display:none">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Continue with Google
+    </button>
+  </div>
 </div>
 
-<div class="card">
+<!-- Checkout Card: shown only when signed in -->
+<div class="card" id="checkout-card" style="display:none">
 
   <!-- ── Checkout view ── -->
   <div id="checkout-view">
@@ -358,18 +431,12 @@
     <p>Your Premium tier is now active.</p>
     <p style="margin-top:16px;">Close this window and relaunch Shackle AI to access all Premium features.</p>
   </div>
+  </main>
 </div>
 
-<div class="legal-footer">
-  <a href="/privacy-policy" target="_blank">Privacy Policy</a>
-  <span style="color:var(--rule)">•</span>
-  <a href="/terms" target="_blank">Terms of Service</a>
-  <span style="color:var(--rule)">•</span>
-  <a href="/refund-policy" target="_blank">Refund Policy</a>
-  <span style="color:var(--rule)">•</span>
-  <a href="/roadmap" target="_blank">Roadmap</a>
-</div>
-
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="/static/js/auth.js"></script>
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
   // ================================================================
@@ -618,21 +685,45 @@
     }
   }
 
-  // Theme toggle
-  function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('shackle-theme', next);
-    updateToggleLabel(next);
+  // ================================================================
+  // FIREBASE AUTH — gate checkout behind real Google sign-in
+  // Ensures the uid used for billing is the Firebase Auth uid (same
+  // document key the desktop app reads), eliminating the spoofable
+  // ?user_id=<username> approach.
+  // ================================================================
+
+  let firebaseAuth = null;
+  let currentUid = null;
+
+  async function getIdToken() {
+    if (!firebaseAuth || !firebaseAuth.currentUser) return null;
+    try {
+      return await firebaseAuth.currentUser.getIdToken(/* forceRefresh */ false);
+    } catch (e) {
+      console.warn('[Auth] Could not get ID token:', e);
+      return null;
+    }
   }
 
-  function updateToggleLabel(theme) {
-    const btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
+  function showAuthGate(message, showBtn) {
+    document.getElementById('checkout-card').style.display = 'none';
+    document.getElementById('auth-gate').style.display = 'block';
+    const msg = document.getElementById('auth-gate-msg');
+    const btn = document.getElementById('google-sign-in-btn');
+    if (msg) msg.textContent = message || 'Verifying session…';
+    if (btn) btn.style.display = showBtn ? 'inline-flex' : 'none';
   }
 
-  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+  function showCheckout() {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('checkout-card').style.display = 'block';
+    loadUserStatus();
+    determineCurrency().then(() => {
+      console.log('[Currency] Detection complete:', currencyInfo);
+    });
+  }
+
+
 
   // ── Main Checkout ──
   async function startCheckout() {
@@ -644,35 +735,36 @@
     errorEl.style.display = 'none';
 
     try {
-      // 1. Resolve public Razorpay Key from environment (Vite: VITE_RAZORPAY_KEY_ID / Next.js: NEXT_PUBLIC_RAZORPAY_KEY_ID)
-      // or from server billing config.
-      let keyId = (typeof window !== 'undefined' && (window.VITE_RAZORPAY_KEY_ID || window.NEXT_PUBLIC_RAZORPAY_KEY_ID || window.RAZORPAY_KEY_ID)) ||
-                  (typeof process !== 'undefined' && process.env && (process.env.VITE_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID)) ||
-                  null;
+      // Get Firebase ID token — this verifies the signed-in user server-side.
+      // OLD BROKEN BEHAVIOUR: read user_id from URL query string (?user_id=username),
+      // which was spoofable and used the wrong Firestore document key.
+      const idToken = await getIdToken();
+      if (!idToken) throw new Error('Not signed in. Please refresh the page and sign in again.');
 
-      if (!keyId || keyId === 'rzp_test_placeholder') {
-        try {
-          const cfgRes = await fetch('/v1/billing/config');
-          if (cfgRes.ok) {
-            const cfg = await cfgRes.json();
-            if (cfg.key_id && cfg.key_id !== 'rzp_test_placeholder') {
-              keyId = cfg.key_id;
-            }
+      // 1. Resolve public Razorpay Key from server billing config
+      let keyId = null;
+      try {
+        const cfgRes = await fetch('/v1/billing/config');
+        if (cfgRes.ok) {
+          const cfg = await cfgRes.json();
+          if (cfg.key_id && cfg.key_id !== 'rzp_test_placeholder') {
+            keyId = cfg.key_id;
           }
-        } catch (cfgErr) {
-          console.warn("Could not retrieve billing config from server:", cfgErr);
         }
+      } catch (cfgErr) {
+        console.warn('Could not retrieve billing config from server:', cfgErr);
       }
 
       if (!keyId || keyId === 'rzp_test_placeholder') {
-        throw new Error('Razorpay environmental authorization keys missing.');
+        throw new Error('Razorpay authorization keys are not configured on this server.');
       }
 
-      // Create order with the detected currency and amount
+      // 2. Create Razorpay order — uid derived server-side from the verified token
       const orderRes = await fetch(
-        `/v1/billing/create-order?user_id=${encodeURIComponent(userId)}&currency=${currencyInfo.code}&amount_cents=${currencyInfo.amount}`,
+        `/v1/billing/create-order?currency=${currencyInfo.code}&amount_cents=${currencyInfo.amount}`,
         {
-          method: 'POST'
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${idToken}` }
         }
       );
       const order = await orderRes.json();
@@ -688,13 +780,7 @@
         name: 'Shackle AI',
         description: `Premium — Monthly Subscription (${order.currency})`,
         order_id: order.order_id,
-        notes: {
-          username: userId,
-          currency: order.currency,
-          amount_cents: order.amount,
-          rate: currencyInfo.rate
-        },
-        // Enable & prioritize UPI (GPay, PhonePe, Paytm, BHIM, QR Code) for INR payments
+        // uid is stored in notes by the server from the verified token — not set here
         config: order.currency === 'INR' ? {
           display: {
             blocks: {
@@ -712,13 +798,6 @@
           }
         } : undefined,
         handler: async function(response) {
-          try {
-            await fetch(`/v1/billing/simulate-success?user_id=${encodeURIComponent(userId)}`, {
-              method: 'POST'
-            });
-          } catch (e) {
-            console.error("Failed to update user tier to premium locally:", e);
-          }
           document.getElementById('checkout-view').style.display = 'none';
           document.getElementById('success-view').style.display = 'block';
         },
@@ -728,7 +807,7 @@
             btn.innerHTML = `Pay ${currencyInfo.symbol}${currencyInfo.displayAmount} — Activate Premium`;
           }
         },
-        prefill: { name: userId },
+        prefill: { name: firebaseAuth && firebaseAuth.currentUser ? firebaseAuth.currentUser.displayName || '' : '' },
         theme: { color: '#2f6fb3' }
       };
 
@@ -747,14 +826,45 @@
   }
 
   // ================================================================
+  // STEP 5: Razorpay User Status (requires auth)
+  // ================================================================
+
+  async function loadUserStatus() {
+    const idToken = await getIdToken();
+    if (!idToken) return;
+    try {
+      const res = await fetch(`/v1/billing/user-status`, {
+        headers: { 'Authorization': `Bearer ${idToken}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.billing_lifecycle && data.billing_lifecycle.status_code === 'TRIAL_ACTIVE') {
+          const days = data.billing_lifecycle.days_remaining_in_trial;
+          const container = document.getElementById('trial-container');
+          if (container) {
+            container.innerHTML = `<div class="trial-banner">⏳ ACTIVE TRIAL: ${days} DAYS REMAINING</div>`;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to retrieve trial status context:', e);
+    }
+  }
+
+  // ================================================================
   // STEP 6: Initialize on Load
   // ================================================================
 
-  loadUserStatus();
-
-  // Run currency detection
-  determineCurrency().then(() => {
-    console.log('[Currency] Detection complete:', currencyInfo);
+  // Start Firebase auth via shared auth.js
+  initFirebaseAuth({
+    onSignIn: (user) => {
+      currentUid = user.uid;
+      showCheckout();
+    },
+    onSignOut: () => {
+      currentUid = null;
+      showAuthGate('Sign in to access the checkout.', true);
+    }
   });
 
   // Expose for debugging

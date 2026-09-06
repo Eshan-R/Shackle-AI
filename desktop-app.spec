@@ -131,20 +131,29 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
     [],
+    exclude_binaries=True,
     name='ShackleAI',
     debug=False,
     icon='logo.ico',
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=False,                      # Keep True to see errors; set to False for release
+    console=False,
     disable_windowed_traceback=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    uac_admin=True,                     # Enforces Windows Administrator UAC prompt on executable launch
+    uac_admin=True,
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name='ShackleAI',
 )

@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import threading
 import firebase_admin
 from firebase_admin import credentials, firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
@@ -12,6 +13,7 @@ class ShackleDatabaseManager:
     def __init__(self):
         self.db = None
         self.fallback_mode = False
+        self._session_lock = threading.Lock()
         
         # Local cache memory to guarantee zero-downtime execution during offline development
         self._local_users: Dict[str, dict] = {
@@ -157,6 +159,56 @@ class ShackleDatabaseManager:
         except Exception as e:
             print(f"[DB_ERR] Session fetch dropped for tracking vector {session_id}: {e}")
             return self._local_sessions.get(session_id)
+
+    def try_claim_session_completion(self, user_id: str, session_id: str) -> bool:
+        """
+        Atomically checks and marks a session as completed to guarantee idempotency.
+        Returns True if this caller successfully claimed the completion, or False if
+        already marked completed by a concurrent or previous request.
+        """
+        if self.fallback_mode or self.db is None:
+            with self._session_lock:
+                sess = self._local_sessions.get(session_id)
+                if sess and sess.get("status") == "completed":
+                    return False
+                if not sess:
+                    self._local_sessions[session_id] = {"status": "completed"}
+                else:
+                    sess["status"] = "completed"
+                return True
+
+        try:
+            doc_ref = self.db.collection("users").document(user_id).collection("sessions").document(session_id)
+            transaction = self.db.transaction()
+
+            @firestore.transactional
+            def _claim_tx(tx):
+                snapshot = doc_ref.get(transaction=tx)
+                if snapshot.exists:
+                    data = snapshot.to_dict() or {}
+                    if data.get("status") == "completed":
+                        return False
+                    tx.update(doc_ref, {"status": "completed"})
+                    return True
+                else:
+                    tx.set(doc_ref, {"status": "completed"}, merge=True)
+                    return True
+
+            claimed = _claim_tx(transaction)
+            if claimed and session_id in self._local_sessions:
+                self._local_sessions[session_id]["status"] = "completed"
+            return claimed
+        except Exception as e:
+            print(f"[DB_ERR] Transactional claim failed for vector {session_id}: {e}")
+            with self._session_lock:
+                sess = self._local_sessions.get(session_id)
+                if sess and sess.get("status") == "completed":
+                    return False
+                if not sess:
+                    self._local_sessions[session_id] = {"status": "completed"}
+                else:
+                    sess["status"] = "completed"
+                return True
 
     # =====================================================================
     # 🚨 GLOBAL "HALL OF FRAUDS" & REAL-TIME LEAGUE SYSTEM

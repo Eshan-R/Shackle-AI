@@ -138,6 +138,12 @@ class VisionEngine:
         self.face_detector = None
         self.pose_detector = None
 
+        # Synchronization guard flags for async initialization and teardown
+        self.is_ready = threading.Event()
+        self.init_error: str | None = None
+        self._init_lock = threading.Lock()
+        self._release_requested = False
+
         # State Tracking Matrix
         self.last_seen_timestamp = time.time()
         self.last_compliant_timestamp = time.time()  # NEW: separate tracker for compliant state
@@ -169,7 +175,18 @@ class VisionEngine:
         # Cached is_far_user — persists across frames so absent/abandoned branches can read it
         self._last_is_far_user: bool = False
 
+        # Offload hardware opening and model compilation to a background thread
+        self._init_thread = threading.Thread(target=self._async_init, daemon=True)
+        self._init_thread.start()
+
+    def _async_init(self):
+        """Asynchronously initializes camera stream and MediaPipe models in a background thread."""
+        logger.info("[VISION ENGINE] Starting asynchronous hardware and model initialization...")
         try:
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested before async init start; aborting.")
+                return
+
             if getattr(sys, 'frozen', False):
                 base_path = sys._MEIPASS
             else:
@@ -181,11 +198,33 @@ class VisionEngine:
             if not os.path.exists(face_model_path) or not os.path.exists(pose_model_path):
                 raise FileNotFoundError("Required MediaPipe configuration assets are missing.")
 
-            # Spin up threaded stream worker
-            self.stream = BackgroundCameraStream(src=0)
-            if not self.stream.is_opened():
-                err_msg = getattr(self.stream, 'error_message', 'OS failed to open a valid stream on VideoCapture(0).')
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested before camera open; aborting.")
+                return
+
+            # 1. Spin up threaded stream worker
+            local_stream = BackgroundCameraStream(src=0)
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested during camera open; releasing local stream.")
+                local_stream.release()
+                return
+
+            if not local_stream.is_opened():
+                err_msg = getattr(local_stream, 'error_message', 'OS failed to open a valid stream on VideoCapture(0).')
+                local_stream.release()
                 raise RuntimeError(err_msg)
+
+            with self._init_lock:
+                if self._release_requested:
+                    logger.info("[VISION ENGINE] Teardown requested before assigning stream; releasing local stream.")
+                    local_stream.release()
+                    return
+                self.stream = local_stream
+
+            # 2. FaceLandmarker
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested before face model load; aborting.")
+                return
 
             # CRITICAL REGRESSION NOTICE: Both FaceLandmarkerOptions and PoseLandmarkerOptions MUST use
             # vision.RunningMode.VIDEO (NOT python.RunningMode.VIDEO — python module has no RunningMode attribute).
@@ -195,22 +234,64 @@ class VisionEngine:
                 output_facial_transformation_matrixes=True,
                 output_face_blendshapes=True  # needed for smile/jaw/cheek expression scores
             )
-            self.face_detector = vision.FaceLandmarker.create_from_options(face_options)
+            local_face_detector = vision.FaceLandmarker.create_from_options(face_options)
+
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested during face model load; closing detector.")
+                try:
+                    local_face_detector.close()
+                except Exception:
+                    pass
+                return
+
+            with self._init_lock:
+                if self._release_requested:
+                    try:
+                        local_face_detector.close()
+                    except Exception:
+                        pass
+                    return
+                self.face_detector = local_face_detector
+
+            # 3. PoseLandmarker
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested before pose model load; aborting.")
+                return
 
             pose_options = vision.PoseLandmarkerOptions(
                 base_options=python.BaseOptions(model_asset_path=pose_model_path),
                 running_mode=vision.RunningMode.VIDEO,
                 output_segmentation_masks=False
             )
-            self.pose_detector = vision.PoseLandmarker.create_from_options(pose_options)
+            local_pose_detector = vision.PoseLandmarker.create_from_options(pose_options)
+
+            if self._release_requested:
+                logger.info("[VISION ENGINE] Teardown requested during pose model load; closing detector.")
+                try:
+                    local_pose_detector.close()
+                except Exception:
+                    pass
+                return
+
+            with self._init_lock:
+                if self._release_requested:
+                    try:
+                        local_pose_detector.close()
+                    except Exception:
+                        pass
+                    return
+                self.pose_detector = local_pose_detector
+                self.is_ready.set()
+
             logger.info("[VISION ENGINE] MediaPipe Face & Pose Landmarker pipelines initialized successfully.")
 
         except Exception as e:
-            err_details = f"[VISION CRITICAL] Failed initializing pipeline: {e}"
-            logger.error(err_details)
-            write_crash_fallback(err_details)
+            if not self._release_requested:
+                err_details = f"[VISION CRITICAL] Failed initializing pipeline: {e}"
+                logger.error(err_details)
+                write_crash_fallback(err_details)
+                self.init_error = str(e)
             self.release()
-            raise e
 
     @staticmethod
     def _calc_dist_w(p1, p2, w: int, h: int) -> float:
@@ -226,14 +307,28 @@ class VisionEngine:
 
     def analyze_frame(self) -> Dict[str, Any]:
         """Processes telemetry metrics and returns definitive user status payloads."""
-        if not self.stream:
+        if not self.is_ready.is_set():
+            if self.init_error:
+                return {
+                    "status": "error",
+                    "error_mode": "init_failed",
+                    "message": f"Vision init failed: {self.init_error}"
+                }
+            return {"status": "processing", "message": "Vision hardware and models initializing in background..."}
+
+        with self._init_lock:
+            stream = self.stream
+            face_detector = self.face_detector
+            pose_detector = self.pose_detector
+
+        if not stream or not face_detector or not pose_detector:
             return {"status": "processing", "message": "Camera hardware uninitialized or warming up."}
 
-        frame = self.stream.read_frame()
+        frame = stream.read_frame()
         if frame is None:
-            if not self.stream.is_opened():
-                err_mode = getattr(self.stream, 'error_mode', 'uninitialized')
-                err_msg = getattr(self.stream, 'error_message', 'Camera hardware uninitialized or camera access blocked.')
+            if not stream.is_opened():
+                err_mode = getattr(stream, 'error_mode', 'uninitialized')
+                err_msg = getattr(stream, 'error_message', 'Camera hardware uninitialized or camera access blocked.')
                 return {
                     "status": "error",
                     "error_mode": err_mode,
@@ -263,8 +358,13 @@ class VisionEngine:
             current_ms = self.last_mp_timestamp_ms + 1
         self.last_mp_timestamp_ms = current_ms
 
-        face_results = self.face_detector.detect_for_video(mp_image, current_ms)
-        pose_results = self.pose_detector.detect_for_video(mp_image, current_ms)
+        try:
+            face_results = face_detector.detect_for_video(mp_image, current_ms)
+            pose_results = pose_detector.detect_for_video(mp_image, current_ms)
+        except Exception as e:
+            if self._release_requested:
+                return {"status": "processing", "message": "Vision engine releasing..."}
+            raise e
 
         face_present = face_results is not None and face_results.face_landmarks is not None and len(face_results.face_landmarks) > 0
         pose_present = pose_results is not None and pose_results.pose_landmarks is not None and len(pose_results.pose_landmarks) > 0
@@ -679,21 +779,34 @@ class VisionEngine:
 
     def release(self):
         logger.info("[SYSTEM] Releasing camera hardware layers...")
-        if self.stream:
-            self.stream.release()
+        with self._init_lock:
+            self._release_requested = True
+            stream_to_release = self.stream
             self.stream = None
-        if self.face_detector:
+            face_detector_to_close = self.face_detector
+            self.face_detector = None
+            pose_detector_to_close = self.pose_detector
+            self.pose_detector = None
+
+        if stream_to_release:
             try:
-                self.face_detector.close()
+                stream_to_release.release()
+            except Exception as e:
+                logger.warning(f"[SYSTEM] Error releasing camera stream: {e}")
+        if face_detector_to_close:
+            try:
+                face_detector_to_close.close()
             except RuntimeError as e:
                 logger.warning(f"[SYSTEM] Face detector already shut down: {e}")
-            self.face_detector = None
-        if self.pose_detector:
+            except Exception as e:
+                logger.warning(f"[SYSTEM] Error closing face detector: {e}")
+        if pose_detector_to_close:
             try:
-                self.pose_detector.close()
+                pose_detector_to_close.close()
             except RuntimeError as e:
                 logger.warning(f"[SYSTEM] Pose detector already shut down: {e}")
-            self.pose_detector = None
+            except Exception as e:
+                logger.warning(f"[SYSTEM] Error closing pose detector: {e}")
 
 
 class HardwareObjectError(Exception):

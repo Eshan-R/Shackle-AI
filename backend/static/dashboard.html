@@ -6,6 +6,7 @@
   <title>Shackle AI — Welcome</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/tokens.css">
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
   </script>
@@ -57,31 +58,80 @@
       transition: background 0.2s, color 0.2s;
     }
 
-    header {
-      background: var(--header-bg);
-      border-bottom: 2px solid var(--green);
-      padding: 20px 20px 0;
-      text-align: center;
-      position: relative;
-      transition: background 0.2s, border-color 0.2s;
+    .dashboard-main {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
-    .theme-toggle {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      font-family: 'IBM Plex Mono', monospace;
+
+    .dashboard-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px clamp(20px, 4vw, 48px);
+      border-bottom: 1px solid var(--rule);
+      background: var(--surface);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+    }
+
+    .topbar-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .topbar-meta {
+      color: var(--muted);
       font-size: 10px;
+    }
+
+    .feature-card.feature-card-hero {
+      position: relative;
+      border: 1px solid var(--amber);
+      background: linear-gradient(180deg, rgba(184, 121, 31, 0.06) 0%, var(--card-bg) 100%);
+      box-shadow: 0 0 20px rgba(184, 121, 31, 0.18), inset 0 0 10px rgba(184, 121, 31, 0.05);
+    }
+
+    html[data-theme="dark"] .feature-card.feature-card-hero {
+      border-color: var(--amber);
+      background: linear-gradient(180deg, rgba(232, 168, 61, 0.08) 0%, var(--card-bg) 100%);
+      box-shadow: 0 0 24px rgba(232, 168, 61, 0.22), inset 0 0 12px rgba(232, 168, 61, 0.08);
+    }
+
+    .hero-badge {
+      position: absolute;
+      top: -10px;
+      right: 14px;
+      font-family: var(--font-mono);
+      font-size: 8.5px;
       font-weight: 700;
       letter-spacing: 1.5px;
-      color: var(--text-2);
-      background: transparent;
-      border: 1px solid var(--rule);
-      padding: 7px 10px;
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: border-color 0.15s, color 0.15s;
+      padding: 3px 8px;
+      background: var(--amber);
+      color: #0b0d10;
+      border-radius: 2px;
+      box-shadow: 0 2px 8px rgba(184, 121, 31, 0.4);
     }
-    .theme-toggle:hover { border-color: var(--green); color: var(--green); }
 
     .logo {
       font-family: 'IBM Plex Mono', monospace;
@@ -283,12 +333,30 @@
   </style>
 </head>
 <body>
+<div class="frame">
+  <aside class="rail">
+    <a href="/dashboard" class="rail-mark">⛓ SHACKLE AI</a>
+    <nav class="rail-tabs">
+      <a href="/dashboard" class="tab is-active">DASHBOARD</a>
+      <a href="/checkout" class="tab">GO PREMIUM</a>
+      <a href="/hall-of-frauds" class="tab">HALL OF FRAUDS</a>
+      <a href="/roadmap" class="tab">ROADMAP</a>
+      <a href="/downloads" class="tab">DOWNLOADS</a>
+      <div class="rail-group-label">LEGAL</div>
+      <a href="/privacy-policy" class="tab">PRIVACY</a>
+      <a href="/terms" class="tab">TERMS</a>
+      <a href="/refund-policy" class="tab">REFUND</a>
+    </nav>
+    <div id="auth-slot"></div>
+    <div class="stamp">ENFORCEMENT<br>VERIFIED<br>2026</div>
+    <button type="button" class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Theme: Light</button>
+  </aside>
 
-<header>
-  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
-  <div class="logo">⛓ SHACKLE AI <span>DASHBOARD</span></div>
-  <div class="tagline">FOCUS ENFORCEMENT SYSTEM · SESSION HANDOFF COMPLETE</div>
-</header>
+  <main class="dashboard-main">
+    <div class="dashboard-topbar">
+      <div class="topbar-status"><span class="pulse-dot"></span> ENFORCEMENT CORE ACTIVE</div>
+      <div class="topbar-meta">SESSION HANDOFF // SYSTEM SECURED</div>
+    </div>
 
 <div class="container">
 
@@ -314,7 +382,8 @@
       <div class="feature-title">Streak Engine</div>
       <div class="feature-desc">Consecutive focused days compound your standing. Miss a day, and it resets — no exceptions.</div>
     </div>
-    <div class="feature-card">
+    <div class="feature-card feature-card-hero">
+      <div class="hero-badge">ENFORCEMENT CORE</div>
       <div class="feature-icon amber">⚠</div>
       <div class="feature-title">Strike Monitor</div>
       <div class="feature-desc">Distraction is tracked in real time. Three strikes triggers a 72-hour lockout on new sessions.</div>
@@ -339,29 +408,23 @@
 
 </div>
 
-<script>
-  function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('shackle-theme', next);
-    updateToggleLabel(next);
-  }
-  function updateToggleLabel(theme) {
-    const btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
-  }
-  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+  </main>
+</div>
 
-  // Personalize greeting via ?name= query param, e.g. dashboard.html?name=Eshan
-  (function personalize() {
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name');
-    if (name && name.trim()) {
-      const safe = name.trim().slice(0, 40).replace(/[<>]/g, '');
-      document.getElementById('welcome-name').textContent = safe;
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="/static/js/auth.js"></script>
+<script>
+  // Shared Firebase Auth integration
+  initFirebaseAuth({
+    onSignIn: (user) => {
+      const name = user.displayName || (user.email ? user.email.split('@')[0] : 'Operative');
+      document.getElementById('welcome-name').textContent = name;
+    },
+    onSignOut: () => {
+      document.getElementById('welcome-name').textContent = 'Operative';
     }
-  })();
+  });
 
   // Boot-sequence terminal animation — the page's signature moment
   const bootLines = [

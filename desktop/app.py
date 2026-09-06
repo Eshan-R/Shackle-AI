@@ -136,13 +136,13 @@ def cleanup():
         daemon_instance.shutdown()
 
 
-def wait_for_backend(url: str = "http://127.0.0.1:8080/api/health", retries: int = 20, delay: float = 0.3):
+def wait_for_backend(url: str = "http://127.0.0.1:8080/api/status", retries: int = 40, delay: float = 0.1):
     """Polls backend health check endpoint until ready or timeout."""
     for i in range(retries):
         try:
             r = requests.get(url, timeout=0.5)
             if r.status_code == 200:
-                print(f"[SYSTEM] Backend ready after {i * delay:.1f}s")
+                print(f"[SYSTEM] Backend ready after {i * delay:.2f}s")
                 return
         except Exception:
             pass
@@ -151,6 +151,7 @@ def wait_for_backend(url: str = "http://127.0.0.1:8080/api/health", retries: int
 
 def main():
     global daemon_instance
+    startup_start_time = time.time()
     import atexit
     atexit.register(cleanup)
 
@@ -187,7 +188,7 @@ def main():
 
     # 5. Spin up the window framework layers
     ui_url = "http://127.0.0.1:8080"
-    print("[SYSTEM] Initializing edge desktop window wrapper layers...")
+    print(f"[SYSTEM] Initializing edge desktop window wrapper layers (elapsed: {time.time() - startup_start_time:.2f}s)...")
     window = webview.create_window(
         title='Shackle AI',
         url=ui_url,

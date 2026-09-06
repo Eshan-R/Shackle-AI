@@ -150,7 +150,7 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
   }
 }
 
-// Sanitization helper to recursively strip undefined properties before saving to Firestore
+// Sanitization helper to recursively strip undefined properties and ephemeral internal markers before saving to Firestore
 export function sanitizeForFirestore<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {
     return obj;
@@ -160,6 +160,9 @@ export function sanitizeForFirestore<T>(obj: T): T {
   }
   const sanitized: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj as Record<string, any>)) {
+    if (key === '_isBaselinePlaceholder' || key.startsWith('_')) {
+      continue;
+    }
     if (value !== undefined) {
       sanitized[key] = sanitizeForFirestore(value);
     }

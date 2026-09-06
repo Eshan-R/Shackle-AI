@@ -514,7 +514,7 @@ export default function DashboardView({ onNavigate, profile, theme = 'Granite Be
 
           <div className="w-full pt-4">
             <button
-              onClick={() => pywebviewBridge.openExternalLink('https://shackle-ai.vercel.app/checkout?user_id=' + encodeURIComponent(profile.username))}
+              onClick={() => pywebviewBridge.openExternalLink('https://shackle-ai.vercel.app/checkout')}
               className="w-full py-4 px-6 bg-gradient-to-r from-red-600 via-fuchsia-600 to-indigo-600 hover:from-red-500 hover:via-fuchsia-500 hover:to-indigo-500 text-white font-sans font-black text-sm tracking-widest uppercase rounded-2xl shadow-lg hover:shadow-fuchsia-500/20 active:scale-95 transition-all duration-300 cursor-pointer"
             >
               Get Premium

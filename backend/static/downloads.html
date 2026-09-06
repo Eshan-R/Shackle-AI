@@ -7,6 +7,7 @@
   <title>Shackle AI — Downloads</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/tokens.css">
   <script>
     (function(){ document.documentElement.setAttribute('data-theme', localStorage.getItem('shackle-theme') || 'light'); })();
   </script>
@@ -58,31 +59,22 @@
       transition: background 0.2s, color 0.2s;
     }
 
+    .downloads-main {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
     header {
       background: var(--header-bg);
       border-bottom: 2px solid var(--green);
-      padding: 20px 20px 0;
+      padding: 24px 20px 0;
       text-align: center;
       position: relative;
       transition: background 0.2s, border-color 0.2s;
     }
-    .theme-toggle {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      color: var(--text-2);
-      background: transparent;
-      border: 1px solid var(--rule);
-      padding: 7px 10px;
-      cursor: pointer;
-      text-transform: uppercase;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .theme-toggle:hover { border-color: var(--green); color: var(--green); }
 
     .logo {
       font-family: 'IBM Plex Mono', monospace;
@@ -330,9 +322,28 @@
   </style>
 </head>
 <body>
+<div class="frame">
+  <aside class="rail">
+    <a href="/dashboard" class="rail-mark">⛓ SHACKLE AI</a>
+    <nav class="rail-tabs">
+      <a href="/dashboard" class="tab">DASHBOARD</a>
+      <a href="/checkout" class="tab">GO PREMIUM</a>
+      <a href="/hall-of-frauds" class="tab">HALL OF FRAUDS</a>
+      <a href="/roadmap" class="tab">ROADMAP</a>
+      <a href="/downloads" class="tab is-active">DOWNLOADS</a>
+      <div class="rail-group-label">LEGAL</div>
+      <a href="/privacy-policy" class="tab">PRIVACY</a>
+      <a href="/terms" class="tab">TERMS</a>
+      <a href="/refund-policy" class="tab">REFUND</a>
+    </nav>
+    <div id="auth-slot"></div>
+    <div class="stamp">CLIENT<br>VERIFIED<br>2026</div>
+    <button type="button" class="theme-toggle" id="theme-btn" onclick="toggleTheme()">Theme: Light</button>
+  </aside>
+
+  <main class="downloads-main">
 
 <header>
-  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">● DARK MODE</button>
   <div class="logo">⛓ SHACKLE AI <span>DOWNLOADS</span></div>
   <div class="tagline">DESKTOP ENFORCEMENT CLIENT · WINDOWS · MACOS · LINUX</div>
 </header>
@@ -363,21 +374,14 @@
 
   <div class="footer">Having trouble installing? <a href="/roadmap">See what's next</a> · <a href="/checkout">Go Premium</a></div>
 
+  </main>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="/static/js/auth.js"></script>
 <script>
-  function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
-    html.setAttribute('data-theme', next);
-    localStorage.setItem('shackle-theme', next);
-    updateToggleLabel(next);
-  }
-  function updateToggleLabel(theme) {
-    const btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = theme === 'light' ? '● DARK MODE' : '☀ LIGHT MODE';
-  }
-  updateToggleLabel(document.documentElement.getAttribute('data-theme'));
+  initFirebaseAuth();
 
   const PLATFORM_META = {
     windows: { icon: '⊞', name: 'Windows' },
@@ -417,7 +421,7 @@
       // With a relative path:
       // const res = await fetch('releases.json', { cache: 'no-store' });
       // Or if serving via backend static endpoint:
-      const res = await fetch('/releases.json', { cache: 'no-store' });
+      const res = await fetch('/static/releases.json', { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       data = await res.json();
     } catch (err) {

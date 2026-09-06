@@ -269,6 +269,11 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
   const [aiReportText, setAiReportText] = useState("");
   const [roastAudioUrl, setRoastAudioUrl] = useState<string | null>(null);
   const [isRoastPlaying, setIsRoastPlaying] = useState<boolean>(false);
+  // Ref-based mutex and queue to prevent stale-closure bugs and serialize overlapping roasts
+  const isRoastPlayingRef = useRef<boolean>(false);
+  const roastQueueRef = useRef<Array<{ url: string | null; text: string }>>([]);
+  const MAX_ROAST_QUEUE_LENGTH = 3; // Defensive queue cap to prevent stale backlog of roasts
+
   const [strikeToast, setStrikeToast] = useState<{ count: number; reason: string } | null>(null);
   const [roastText, setRoastText] = useState<string | null>(null);
   const [isRoastDismissed, setIsRoastDismissed] = useState<boolean>(false);
@@ -287,10 +292,8 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
-  // Plays roast audio via AudioContext (bypasses autoplay) with fallback to Audio element
-  const playRoastWithContext = async (url: string) => {
-    if (isRoastPlaying) return; // prevent overlapping/duplicate playback
-    setIsRoastPlaying(true);
+  // Plays a single audio stream via AudioContext (bypassing autoplay) with HTMLAudioElement fallback
+  const playAudioStream = async (url: string): Promise<void> => {
     const ctx = window.__shackleAudioContext || audioContextRef.current || new (window.AudioContext || (window as any).webkitAudioContext)();
     try {
       if (ctx.state === 'suspended') await ctx.resume();
@@ -307,7 +310,14 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
       source.buffer = audioBuffer;
       source.connect(ctx.destination);
       await new Promise<void>((resolve) => {
-        source.onended = () => resolve();
+        const safetyTimeout = setTimeout(() => {
+          console.warn('[RoastAudio] AudioContext playback timed out after 25s, releasing lock.');
+          resolve();
+        }, 25000);
+        source.onended = () => {
+          clearTimeout(safetyTimeout);
+          resolve();
+        };
         source.start();
       });
     } catch (e) {
@@ -315,9 +325,20 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
       try {
         const audio = new Audio(url);
         await new Promise<void>((resolve) => {
-          audio.onended = () => resolve();
-          audio.onerror = () => resolve();
+          const safetyTimeout = setTimeout(() => {
+            console.warn('[RoastAudio] Fallback Audio playback timed out after 25s, releasing lock.');
+            resolve();
+          }, 25000);
+          audio.onended = () => {
+            clearTimeout(safetyTimeout);
+            resolve();
+          };
+          audio.onerror = () => {
+            clearTimeout(safetyTimeout);
+            resolve();
+          };
           audio.play().catch(err => {
+            clearTimeout(safetyTimeout);
             console.warn('[RoastAudio] Fallback play also failed:', err);
             resolve();
           });
@@ -325,28 +346,86 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
       } catch (fallbackErr) {
         console.warn('[RoastAudio] Audio fallback error:', fallbackErr);
       }
-    } finally {
-      setIsRoastPlaying(false);
     }
+  };
+
+  // Mutable ref holding the latest playNextInQueue function so window callbacks never close over stale state
+  const playNextInQueueRef = useRef<() => void>(() => {});
+
+  const playNextInQueue = async () => {
+    // Ref-based concurrency guard: immune to stale closure bugs
+    if (isRoastPlayingRef.current) return;
+    if (roastQueueRef.current.length === 0) return;
+
+    const nextItem = roastQueueRef.current.shift();
+    if (!nextItem) return;
+
+    isRoastPlayingRef.current = true;
+    setIsRoastPlaying(true); // Updates button state ("Playing...")
+    setRoastText(nextItem.text);
+    setIsRoastDismissed(false);
+
+    try {
+      if (nextItem.url) {
+        setRoastAudioUrl(nextItem.url);
+        await playAudioStream(nextItem.url);
+      } else {
+        // Text-only roast fallback (e.g. TTS/ElevenLabs unavailable)
+        // Keep text visible for 6 seconds (matching strike toast auto-dismiss timing)
+        await new Promise<void>((resolve) => setTimeout(resolve, 6000));
+      }
+    } catch (err) {
+      console.warn('[RoastQueue] Playback failed for item:', err);
+    } finally {
+      isRoastPlayingRef.current = false;
+      setIsRoastPlaying(false);
+      // Advance to the next roast queued during playback
+      playNextInQueueRef.current();
+    }
+  };
+
+  playNextInQueueRef.current = playNextInQueue;
+
+  // Plays roast audio via queue, preventing overlapping/duplicate playback
+  const playRoastWithContext = (url: string, text?: string) => {
+    if (roastQueueRef.current.length >= MAX_ROAST_QUEUE_LENGTH) {
+      console.warn(`[RoastQueue] Queue cap (${MAX_ROAST_QUEUE_LENGTH}) reached, dropping replay push.`);
+      return;
+    }
+    roastQueueRef.current.push({
+      url,
+      text: text || roastText || 'Shackle AI Roast'
+    });
+    playNextInQueueRef.current();
   };
 
   // Register global handlers so the Python daemon can trigger roast audio & toasts
   useEffect(() => {
     window.playRoastAudio = (url: string, text?: string) => {
-      setRoastAudioUrl(url);
-      if (text) {
-        setRoastText(text);
-        setIsRoastDismissed(false);
+      if (roastQueueRef.current.length >= MAX_ROAST_QUEUE_LENGTH) {
+        console.warn(`[RoastQueue] Queue cap (${MAX_ROAST_QUEUE_LENGTH}) reached, dropping roast audio: ${text}`);
+        return;
       }
-      playRoastWithContext(url);
+      roastQueueRef.current.push({
+        url,
+        text: text || 'Get back to work.'
+      });
+      playNextInQueueRef.current();
     };
     window.showStrikeToast = (count: number, reason: string) => {
       setStrikeToast({ count, reason });
       setTimeout(() => setStrikeToast(null), 6000);
     };
     window.showRoastText = (text: string) => {
-      setRoastText(text);
-      setIsRoastDismissed(false);
+      if (roastQueueRef.current.length >= MAX_ROAST_QUEUE_LENGTH) {
+        console.warn(`[RoastQueue] Queue cap (${MAX_ROAST_QUEUE_LENGTH}) reached, dropping text-only roast: ${text}`);
+        return;
+      }
+      roastQueueRef.current.push({
+        url: null,
+        text
+      });
+      playNextInQueueRef.current();
     };
     return () => {
       delete window.playRoastAudio;
@@ -1247,17 +1326,32 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
                   )}
                 </motion.div>
               </AnimatePresence>
-
-              {/* Centered Overlays for Strike Toast & Roast Text Toast */}
-              <AnimatePresence mode="popLayout">
-                {strikeToast ? (
+            </div>
+            {/* ── Full-viewport Strike Toast Overlay ─────────────────────────────────
+                OLD BROKEN BEHAVIOUR: toast was `absolute inset-0` inside the
+                `w-full max-w-md` timer wrapper, which constrained its height to the
+                timer card and clipped any content that overflowed. Moving to
+                `fixed inset-0` makes it cover the full viewport correctly. */}
+            <AnimatePresence mode="popLayout">
+              {strikeToast ? (
+                <motion.div
+                  key="strike-toast-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="fixed inset-0 z-40 flex flex-col items-center justify-center p-8 backdrop-blur-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${toastPalette.accentHex}40 0%, ${toastPalette.cardBgHex}E0 60%, ${toastPalette.bgHex}F0 100%)`,
+                  }}
+                >
                   <motion.div
-                    key="strike-toast-overlay"
-                    initial={{ y: 80, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -80, opacity: 0 }}
+                    key="strike-toast-card"
+                    initial={{ y: 80, scale: 0.95, opacity: 0 }}
+                    animate={{ y: 0, scale: 1, opacity: 1 }}
+                    exit={{ y: -80, scale: 0.95, opacity: 0 }}
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center rounded-2xl backdrop-blur-md border shadow-2xl overflow-hidden"
+                    className="relative w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden p-6 text-center"
                     style={{
                       background: `linear-gradient(135deg, ${toastPalette.accentHex}50 0%, ${toastPalette.cardBgHex}E6 60%, ${toastPalette.bgHex}F2 100%)`,
                       borderColor: `${toastPalette.borderHex}AA`,
@@ -1271,7 +1365,7 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
                       ✕
                     </button>
 
-                    <div className="space-y-3 max-w-sm">
+                    <div className="space-y-3 max-w-sm mx-auto">
                       <div className="inline-flex items-center justify-center p-3 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse mb-1">
                         <ShieldAlert className="w-8 h-8" />
                       </div>
@@ -1290,14 +1384,26 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
                       </div>
                     </div>
                   </motion.div>
-                ) : roastText && !isRoastDismissed ? (
+                </motion.div>
+              ) : roastText && !isRoastDismissed ? (
+                <motion.div
+                  key="roast-toast-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="fixed inset-0 z-40 flex flex-col items-center justify-center p-8 backdrop-blur-md"
+                  style={{
+                    background: `linear-gradient(135deg, ${toastPalette.accentHex}30 0%, ${toastPalette.cardBgHex}E0 60%, ${toastPalette.bgHex}F0 100%)`,
+                  }}
+                >
                   <motion.div
-                    key="roast-toast-overlay"
-                    initial={{ y: 80, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -80, opacity: 0 }}
+                    key="roast-toast-card"
+                    initial={{ y: 80, scale: 0.95, opacity: 0 }}
+                    animate={{ y: 0, scale: 1, opacity: 1 }}
+                    exit={{ y: -80, scale: 0.95, opacity: 0 }}
                     transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute inset-0 z-30 flex flex-col items-center justify-center p-6 text-center rounded-2xl backdrop-blur-md border shadow-2xl overflow-hidden"
+                    className="relative w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden p-6 text-center"
                     style={{
                       background: `linear-gradient(135deg, ${toastPalette.accentHex}40 0%, ${toastPalette.cardBgHex}E6 60%, ${toastPalette.bgHex}F2 100%)`,
                       borderColor: `${toastPalette.borderHex}AA`,
@@ -1311,7 +1417,7 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
                       ✕
                     </button>
 
-                    <div className="space-y-3 max-w-sm">
+                    <div className="space-y-3 max-w-sm mx-auto">
                       <div className="inline-flex items-center justify-center p-2.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 animate-bounce mb-1">
                         <Sparkles className="w-6 h-6" />
                       </div>
@@ -1339,22 +1445,22 @@ export default function LetsShackleView({ timerConfigs, displaySettings, onSessi
                       </motion.div>
                     </div>
                   </motion.div>
-                ) : null}
-              </AnimatePresence>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
 
-              {/* Small re-open affordance badge when roast text is dismissed */}
-              {roastText && isRoastDismissed && (
-                <motion.button
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => setIsRoastDismissed(false)}
-                  className="absolute -top-3 left-1/2 -translate-x-1/2 z-40 px-3 py-1 bg-amber-500/90 hover:bg-amber-500 text-slate-950 rounded-full font-sans font-bold text-[10px] uppercase tracking-wider shadow-lg backdrop-blur-md flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  <span>View AI Roast</span>
-                </motion.button>
-              )}
-            </div>
+            {/* Small re-open affordance badge — fixed at bottom-center of viewport */}
+            {roastText && isRoastDismissed && (
+              <motion.button
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => setIsRoastDismissed(false)}
+                className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-3 py-1 bg-amber-500/90 hover:bg-amber-500 text-slate-950 rounded-full font-sans font-bold text-[10px] uppercase tracking-wider shadow-lg backdrop-blur-md flex items-center gap-1.5 cursor-pointer transition-all hover:scale-105"
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>View AI Roast</span>
+              </motion.button>
+            )}
 
             {/* Subtitles: Current Status from Image 2 */}
             {(() => {

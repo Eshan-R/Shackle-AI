@@ -39,6 +39,10 @@
       "destination": "/roadmap.html"
     },
     {
+      "source": "/static/:path*",
+      "destination": "/:path*"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://api-backend-469575199115.asia-south1.run.app/api/:path*"
     },

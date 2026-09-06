@@ -61,8 +61,10 @@ class ShackleDaemon:
         logger.info("[SYSTEM] Booting Threaded Vision Engine...")
         try:
             self.vision_engine = VisionEngine()
-            self.vision_initialized = True
-            logger.info("[SYSTEM] Vision Engine initialized successfully.")
+            # Asynchronous background initialization: self.vision_initialized starts False
+            # and flips to True once self.vision_engine.is_ready is set.
+            self.vision_initialized = False
+            logger.info("[SYSTEM] Vision Engine instantiated (async init underway).")
         except Exception as e:
             logger.warning(f"[WARNING] Vision Engine initialization failed: {e}. Continuing without vision monitoring.")
             self.vision_engine = None
@@ -108,12 +110,17 @@ class ShackleDaemon:
 
         # Vision status check
         vision_status = "FAIL (Engine Uninitialized)"
-        if self.vision_initialized and self.vision_engine:
-            if getattr(self.vision_engine, 'stream', None) and self.vision_engine.stream.is_opened():
-                vision_status = "PASS (MediaPipe Landmarker & Camera Stream Active)"
+        if self.vision_engine:
+            if hasattr(self.vision_engine, 'is_ready') and self.vision_engine.is_ready.is_set():
+                if getattr(self.vision_engine, 'stream', None) and self.vision_engine.stream.is_opened():
+                    vision_status = "PASS (MediaPipe Landmarker & Camera Stream Active)"
+                else:
+                    err_msg = getattr(self.vision_engine.stream, 'error_message', 'Camera stream unopened') if getattr(self.vision_engine, 'stream', None) else 'No stream'
+                    vision_status = f"FAIL ({err_msg})"
+            elif getattr(self.vision_engine, 'init_error', None):
+                vision_status = f"FAIL ({self.vision_engine.init_error})"
             else:
-                err_msg = getattr(self.vision_engine.stream, 'error_message', 'Camera stream unopened') if getattr(self.vision_engine, 'stream', None) else 'No stream'
-                vision_status = f"FAIL ({err_msg})"
+                vision_status = "INITIALIZING (Camera & MediaPipe loading asynchronously)"
 
         # Telemetry status check (allow listeners to initialize)
         time.sleep(1.5)
@@ -165,13 +172,21 @@ class ShackleDaemon:
                 except Exception as e:
                     self._cached_telemetry_snapshot = {"status": "error", "message": f"Telemetry error: {str(e)}", "apm": 0, "kpm": 0}
 
-            if self.vision_initialized and self.vision_engine:
-                try:
-                    vision_state = self.vision_engine.analyze_frame()
-                    self.last_vision_status = vision_state.get("status", "error")
-                except Exception as e:
-                    vision_state = {"status": "error", "message": f"Vision error: {str(e)}"}
-                    self.last_vision_status = "error"
+            if self.vision_engine:
+                if not self.vision_initialized:
+                    if hasattr(self.vision_engine, 'is_ready') and self.vision_engine.is_ready.is_set():
+                        self.vision_initialized = True
+                        logger.info("[SYSTEM] Vision Engine background initialization complete. Vision monitoring active.")
+
+                if self.vision_initialized:
+                    try:
+                        vision_state = self.vision_engine.analyze_frame()
+                        self.last_vision_status = vision_state.get("status", "error")
+                    except Exception as e:
+                        vision_state = {"status": "error", "message": f"Vision error: {str(e)}"}
+                        self.last_vision_status = "error"
+                else:
+                    vision_state = {"status": "processing", "message": "Vision engine initializing in background..."}
 
             # 1. Active Window Trap
             active_window_lower = active_window.lower()
@@ -515,8 +530,10 @@ class ShackleDaemon:
         elif not active and self.session_active:
             try:
                 eff_duration = duration_minutes if duration_minutes != 45 else (getattr(self, 'session_duration', 45) or 45)
-                eff_xp = xp_earned if xp_earned is not None else eff_duration
+                # Cleanup calls default to 0 XP — real XP is calculated and awarded by addSession
+                eff_xp = xp_earned if xp_earned is not None else 0
 
+                logger.info(f"[XP_AUDIT_DAEMON] Calling /v1/session/end: session_id={self.session_id} user_id={self.user_id} eff_xp={eff_xp} eff_duration={eff_duration} strikes={self.strike_count}")
                 requests.post(
                     f"{self.api_url}/v1/session/end",
                     params={
@@ -655,7 +672,7 @@ class ShackleDaemon:
 
     def set_book_mode(self, active: bool) -> bool:
         try:
-            if self.vision_initialized and self.vision_engine:
+            if self.vision_engine:
                 self.vision_engine.set_book_mode(active)
             if active:
                 self.break_manager.set_grace("distracted", 180)
@@ -762,7 +779,7 @@ class ShackleDaemon:
         logger.info("[SYSTEM] Shutting down Daemon components...")
         self.is_running = False
 
-        if self.vision_initialized and self.vision_engine:
+        if self.vision_engine:
             self.vision_engine.release()
 
         if self.telemetry_initialized and self.telemetry_engine:

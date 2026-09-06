@@ -32,6 +32,7 @@ export interface UserProfile {
   penalty_phase?: number;
   last_session_date?: string | null; // 'YYYY-MM-DD' – used to gate once-per-day streak increments
   createdAt?: number;
+  _isBaselinePlaceholder?: boolean; // Ephemeral marker for transient baseline seed profiles, never written to DB
   premium_start_date?: number;
   premium_end_date?: number;
   updatedAt?: number;
