@@ -1151,10 +1151,15 @@ def get_premium_voice_status(user_id: str):
 # =====================================================================
 
 @app.get("/v1/billing/config")
-def get_billing_config():
+def get_billing_config(request: Request):
     """
-    Returns public Razorpay key and the exact billing baseline for the checkout engine.
-    Configured for exactly $9.99 USD (999 cents).
+    Returns the public Razorpay key, the full plan table, and the server-derived
+    PPP income tier for the caller's IP.
+
+    Country resolution is ALWAYS server-side (cf-ipcountry / x-vercel-ip-country /
+    PPP_DEV_COUNTRY env var). The client never supplies a country field that feeds
+    into pricing — this endpoint and create-order use the same helper so displayed
+    prices always match validated charges.
     """
     key_id = (
         os.environ.get("VITE_RAZORPAY_KEY_ID")
@@ -1162,11 +1167,41 @@ def get_billing_config():
         or os.environ.get("RAZORPAY_KEY_ID")
         or "rzp_test_placeholder"
     )
+
+    if not _PRICING_TIERS_AVAILABLE:
+        # Legacy fallback: single monthly plan, no PPP
+        return {
+            "key_id": key_id,
+            "income_tier": "high",
+            "ppp_multiplier": 1.0,
+            "plans": {
+                "monthly": {
+                    "plan_id": "monthly", "label": "Monthly",
+                    "usd_cents": 999, "days": 30
+                }
+            },
+        }
+
+    tier = resolve_income_tier(request)
+    db = getattr(ShackleDB, '_db', None) or getattr(ShackleDB, 'db', None)
+    pricing_cfg = fetch_pricing_config(db)
+    multiplier = get_ppp_multiplier(tier, pricing_cfg)
+
+    # Build plan table annotated with the PPP-adjusted USD base cents
+    # (exchange-rate conversion for non-USD currencies happens client-side
+    # using the same FX flow as before; create-order recomputes server-side).
+    plan_table = {}
+    for pid, plan in PLANS.items():
+        plan_table[pid] = {
+            **plan,
+            "ppp_usd_cents": max(100, int(round(plan["usd_cents"] * multiplier))),
+        }
+
     return {
         "key_id": key_id,
-        "currency": "USD",
-        "amount_cents": 999,  # $9.99 represented in the smallest currency unit
-        "plan_name": "Shackle AI Premium — Monthly Access"
+        "income_tier": tier,
+        "ppp_multiplier": multiplier,
+        "plans": plan_table,
     }
 
 @app.get("/v1/config/firebase")
@@ -1284,18 +1319,40 @@ FALLBACK_EXCHANGE_RATES = {
     "CNY": 7.20,
 }
 
-@app.post("/v1/billing/create-order")
-def create_razorpay_order(currency: str = "USD", amount_cents: int = 999, authorization: str = Header(None)):
-    """
-    Creates a Razorpay order with dynamic currency and amount.
-    Receives the calculated amount_cents from the frontend and validates it
-    against expected currency ranges.
+try:
+    from pricing_tiers import (
+        PLANS, VALID_PLAN_IDS,
+        _resolve_country_from_request,
+        resolve_income_tier,
+        get_ppp_multiplier,
+        compute_plan_cents,
+        fetch_pricing_config,
+        seed_pricing_config_if_missing,
+    )
+    _PRICING_TIERS_AVAILABLE = True
+except ImportError as _pt_err:
+    _PRICING_TIERS_AVAILABLE = False
+    print(f"[WARNING] pricing_tiers.py not importable — falling back to legacy single-plan billing. Error: {_pt_err}")
 
-    OLD BROKEN BEHAVIOUR: user_id was an unauthenticated query param (username
-    string). The Razorpay order notes wrote notes['username'], while the webhook
-    handler then called ShackleDB.get_user(username) — but the desktop app stores
-    data at users/{uid}, so paying users were charged and never received Premium.
-    FIX: uid derived from verified Firebase ID token; notes key renamed to 'uid'.
+@app.post("/v1/billing/create-order")
+def create_razorpay_order(
+    request: Request,
+    currency: str = "USD",
+    amount_cents: int = 0,
+    plan_id: str = "monthly",
+    authorization: str = Header(None),
+):
+    """
+    Creates a Razorpay order for a specific plan with PPP-adjusted pricing.
+
+    Security contract:
+    - uid: derived exclusively from the verified Firebase ID token (Bearer header).
+    - country/income_tier: derived exclusively from server-side infrastructure
+      headers (cf-ipcountry / x-vercel-ip-country / PPP_DEV_COUNTRY env var).
+      The client NEVER supplies a country value that influences expected_cents.
+    - amount_cents from the client is validated within a ±30% tolerance of the
+      server-computed expected_cents. If the client sends 0, the server-computed
+      expected_cents is used directly.
     """
     # Derive uid from verified Firebase ID token — cannot be spoofed by the client
     uid = verify_firebase_token(authorization)
@@ -1312,23 +1369,59 @@ def create_razorpay_order(currency: str = "USD", amount_cents: int = 999, author
     if not key_id or not key_secret:
         raise HTTPException(status_code=503, detail="Razorpay environmental authorization keys missing.")
 
+    # Validate plan_id
+    if _PRICING_TIERS_AVAILABLE:
+        if plan_id not in VALID_PLAN_IDS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid plan_id '{plan_id}'. Valid plans: {sorted(VALID_PLAN_IDS)}"
+            )
+        plan = PLANS[plan_id]
+        duration_days = plan["days"]
+    else:
+        # Legacy fallback: treat everything as 30-day monthly
+        plan_id = "monthly"
+        duration_days = 30
+
     curr_upper = (currency or "USD").upper().strip()
     rate = FALLBACK_EXCHANGE_RATES.get(curr_upper)
     if not rate:
-        raise HTTPException(status_code=400, detail=f"Unsupported currency: {currency}")
+        raise HTTPException(status_code=400, detail=f"Unsupported currency: {curr_upper}")
 
-    # Server-side validation against tampering: calculate expected price with tolerance
-    expected_cents = int(round(999 * rate))
+    # Server-side expected_cents: computed from server-derived country only.
+    # The client country value is never used here.
+    if _PRICING_TIERS_AVAILABLE:
+        tier = resolve_income_tier(request)   # reads cf-ipcountry / x-vercel-ip-country
+        db = getattr(ShackleDB, '_db', None) or getattr(ShackleDB, 'db', None)
+        pricing_cfg = fetch_pricing_config(db)
+        expected_cents = compute_plan_cents(plan_id, tier, rate, pricing_cfg)
+    else:
+        tier = "high"
+        expected_cents = int(round(999 * rate))
+
+    # Tolerance: ±30 % around server-computed expected_cents.
+    # The lower bound is at least 100 (Razorpay minimum) and the upper is capped
+    # at 1,000,000 to guard against obviously malformed payloads.
     min_allowed = max(100, int(expected_cents * 0.70))
-    max_allowed = min(1000000, int(expected_cents * 1.50))
+    max_allowed = min(1_000_000, int(expected_cents * 1.30))
 
+    # If the client sends 0 (or omits the field), use the server-computed amount.
     amount = amount_cents if amount_cents > 0 else expected_cents
 
     if amount < min_allowed or amount > max_allowed:
         raise HTTPException(
             status_code=400,
-            detail=f"Amount out of valid range for {curr_upper}. Expected approx {expected_cents} cents (allowed: {min_allowed}-{max_allowed}), received: {amount}."
+            detail=(
+                f"Amount out of valid range for {curr_upper} / plan '{plan_id}' / tier '{tier}'. "
+                f"Expected ~{expected_cents} cents (allowed {min_allowed}–{max_allowed}), "
+                f"received {amount}."
+            )
         )
+
+    print(
+        f"[BILLING] create-order uid={uid} plan={plan_id} tier={tier} "
+        f"currency={curr_upper} expected={expected_cents} received={amount} days={duration_days}"
+    )
 
     try:
         client = razorpay_sdk.Client(auth=(key_id, key_secret))
@@ -1338,12 +1431,14 @@ def create_razorpay_order(currency: str = "USD", amount_cents: int = 999, author
             "currency": curr_upper,
             "receipt": f"shackle_{uid}_{int(time.time())}",
             "notes": {
-                # Key renamed from 'username' to 'uid' — the webhook handler reads
-                # this to resolve the correct users/{uid} Firestore document.
+                # uid key: webhook reads this to find the correct users/{uid} Firestore doc.
                 "uid": uid,
+                "plan_id": plan_id,
+                "duration_days": duration_days,
+                "income_tier": tier,
                 "currency": curr_upper,
                 "amount_cents": amount,
-                "original_usd_cents": 999
+                "original_usd_cents": PLANS[plan_id]["usd_cents"] if _PRICING_TIERS_AVAILABLE else 999,
             },
             "payment_capture": 1
         }
@@ -1352,7 +1447,9 @@ def create_razorpay_order(currency: str = "USD", amount_cents: int = 999, author
         return {
             "order_id": order["id"],
             "amount": order["amount"],
-            "currency": order["currency"]
+            "currency": order["currency"],
+            "plan_id": plan_id,
+            "duration_days": duration_days,
         }
     except razorpay_sdk.errors.BadRequestError as e:
         raise HTTPException(status_code=400, detail=f"Razorpay error: {str(e)}")
@@ -1405,23 +1502,41 @@ async def process_razorpay_event(request: Request, x_razorpay_signature: str = H
         
         if target_user:
             profile = ShackleDB.get_user(target_user) or {}
-            
+
             now = time.time()
+
+            # Read plan duration from order notes — falls back to 30 days (legacy orders).
+            # The webhook NEVER trusts a client-supplied duration; it trusts only the
+            # notes written by create-order (which are server-side values).
+            try:
+                duration_days = int(payload_entity.get("notes", {}).get("duration_days", 30))
+            except (TypeError, ValueError):
+                duration_days = 30
+            # Clamp to sane bounds: minimum 1 day, maximum 400 days.
+            duration_days = max(1, min(400, duration_days))
+
+            plan_label = payload_entity.get("notes", {}).get("plan_id", "monthly")
+
             profile["tier"] = "premium"
             profile["premium_start_date"] = now
-            profile["premium_end_date"] = now + (30 * 86400)
+            profile["premium_end_date"] = now + (duration_days * 86400)
             profile["premium_reminder_sent"] = False
             profile["billing_lifecycle"] = {
                 "access_granted": True,
                 "status_code": "PREMIUM_ACTIVE",
                 "days_remaining_in_trial": 0
             }
-            
-            # Save mutated profile structure securely down to database layers
+
             ShackleDB.set_user(target_user, profile)
-            print(f"[BILLING SUCCESS] Account @{target_user} upgraded smoothly to Premium via Webhook Hook.")
-            
-            return {"status": "success", "message": f"Upgraded profile parameters for user: @{target_user}."}
+            print(
+                f"[BILLING SUCCESS] Account @{target_user} upgraded to Premium "
+                f"(plan={plan_label}, duration={duration_days}d) via Webhook."
+            )
+
+            return {
+                "status": "success",
+                "message": f"Upgraded @{target_user} to Premium ({plan_label}, {duration_days} days)."
+            }
 
     return {"status": "ignored", "event": event}
 
@@ -1491,7 +1606,11 @@ def downloads_page():
 
 @app.get("/hall-of-frauds")
 def hall_of_frauds_page():
-    return FileResponse(os.path.join(_STATIC_DIR, "hall_of_frauds.html"))
+    # Prefer hall-of-frauds.html (hyphen — matches Vercel cleanUrls convention).
+    # Fall back to the legacy underscore filename if the hyphen version isn't present.
+    hyphen_path = os.path.join(_STATIC_DIR, "hall-of-frauds.html")
+    underscore_path = os.path.join(_STATIC_DIR, "hall_of_frauds.html")
+    return FileResponse(hyphen_path if os.path.isfile(hyphen_path) else underscore_path)
 
 @app.get("/privacy-policy")
 def privacy_policy_page():

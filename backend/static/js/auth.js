@@ -13,6 +13,21 @@ const authStateCallbacks = [];
  * Initialize Firebase authentication across any static page.
  * @param {Object} options - Callbacks { onSignIn: (user) => void, onSignOut: () => void }
  */
+// Hardcoded Firebase project config (public values — safe to commit).
+// These are the same values shown in the Firebase Console "Add to web app" snippet.
+// auth.js also tries to GET /v1/config/firebase to allow server-side overrides;
+// the hardcoded values here are the fallback so the site works even when the
+// backend config endpoint isn't reachable (e.g. during Vercel cold start).
+const _SHACKLE_FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyCDnr1BPsBiVrrNxU2TPUDTxtIFpmEaM2A",
+  authDomain:        "shackle-ai.firebaseapp.com",
+  projectId:         "shackle-ai",
+  storageBucket:     "shackle-ai.firebasestorage.app",
+  messagingSenderId: "469575199115",
+  appId:             "1:469575199115:web:1040e8985ea2904abda78e",
+  measurementId:     "G-8HCK3H3WGQ",
+};
+
 async function initFirebaseAuth(options = {}) {
   if (options.onSignIn) authStateCallbacks.push({ type: 'in', fn: options.onSignIn });
   if (options.onSignOut) authStateCallbacks.push({ type: 'out', fn: options.onSignOut });
@@ -28,11 +43,21 @@ async function initFirebaseAuth(options = {}) {
 
   try {
     if (!firebase.apps.length) {
-      const cfgRes = await fetch('/v1/config/firebase');
-      if (!cfgRes.ok) {
-        throw new Error('HTTP ' + cfgRes.status + ' loading /v1/config/firebase');
+      // Start with the hardcoded config so auth works immediately.
+      // Then try to fetch server-side overrides (e.g. different project in staging).
+      let cfg = { ..._SHACKLE_FIREBASE_CONFIG };
+      try {
+        const cfgRes = await fetch('/v1/config/firebase');
+        if (cfgRes.ok) {
+          const serverCfg = await cfgRes.json();
+          // Only override if the server returns a non-empty apiKey
+          if (serverCfg.apiKey) {
+            cfg = { ...cfg, ...serverCfg };
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('[ShackleAuth] /v1/config/firebase unreachable, using bundled config:', fetchErr);
       }
-      const cfg = await cfgRes.json();
       firebase.initializeApp(cfg);
     }
 
