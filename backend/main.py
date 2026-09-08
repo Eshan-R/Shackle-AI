@@ -1210,13 +1210,30 @@ def get_firebase_web_config():
     Returns the public Firebase Web SDK configuration for use by static HTML pages.
     These values are intentionally public — they appear in every Firebase project's
     'Add to web app' snippet and only identify the project, not private secrets.
+
+    Required env vars on the Cloud Run backend:
+        VITE_FIREBASE_API_KEY
+        VITE_FIREBASE_AUTH_DOMAIN      (e.g. shackle-ai.firebaseapp.com)
+        VITE_FIREBASE_PROJECT_ID       (e.g. shackle-ai)
+        VITE_FIREBASE_STORAGE_BUCKET   (e.g. shackle-ai.firebasestorage.app)
+        VITE_FIREBASE_MESSAGING_SENDER_ID
+        VITE_FIREBASE_APP_ID           (e.g. 1:469575199115:web:...)
+        VITE_FIREBASE_MEASUREMENT_ID   (optional, for Analytics)
     """
-    return {
-        "apiKey":      os.environ.get("VITE_FIREBASE_API_KEY", ""),
-        "authDomain":  os.environ.get("VITE_FIREBASE_AUTH_DOMAIN", ""),
-        "projectId":   os.environ.get("VITE_FIREBASE_PROJECT_ID", ""),
-        "appId":       os.environ.get("VITE_FIREBASE_APP_ID", ""),
+    cfg = {
+        "apiKey":            os.environ.get("VITE_FIREBASE_API_KEY", ""),
+        "authDomain":        os.environ.get("VITE_FIREBASE_AUTH_DOMAIN", ""),
+        "projectId":         os.environ.get("VITE_FIREBASE_PROJECT_ID", ""),
+        "storageBucket":     os.environ.get("VITE_FIREBASE_STORAGE_BUCKET", ""),
+        "messagingSenderId": os.environ.get("VITE_FIREBASE_MESSAGING_SENDER_ID", ""),
+        "appId":             os.environ.get("VITE_FIREBASE_APP_ID", ""),
     }
+    # measurementId is optional (Analytics only); omit if not set to avoid
+    # Firebase warning about empty strings.
+    measurement_id = os.environ.get("VITE_FIREBASE_MEASUREMENT_ID", "")
+    if measurement_id:
+        cfg["measurementId"] = measurement_id
+    return cfg
 
 @app.get("/v1/billing/user-status")
 def get_billing_user_status(authorization: str = Header(None)):

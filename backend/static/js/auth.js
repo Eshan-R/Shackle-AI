@@ -13,21 +13,15 @@ const authStateCallbacks = [];
  * Initialize Firebase authentication across any static page.
  * @param {Object} options - Callbacks { onSignIn: (user) => void, onSignOut: () => void }
  */
-// Hardcoded Firebase project config (public values — safe to commit).
-// These are the same values shown in the Firebase Console "Add to web app" snippet.
-// auth.js also tries to GET /v1/config/firebase to allow server-side overrides;
-// the hardcoded values here are the fallback so the site works even when the
-// backend config endpoint isn't reachable (e.g. during Vercel cold start).
-const _SHACKLE_FIREBASE_CONFIG = {
-  apiKey:            "AIzaSyCDnr1BPsBiVrrNxU2TPUDTxtIFpmEaM2A",
-  authDomain:        "shackle-ai.firebaseapp.com",
-  projectId:         "shackle-ai",
-  storageBucket:     "shackle-ai.firebasestorage.app",
-  messagingSenderId: "469575199115",
-  appId:             "1:469575199115:web:1040e8985ea2904abda78e",
-  measurementId:     "G-8HCK3H3WGQ",
-};
-
+/**
+ * Initialize Firebase authentication across any static page.
+ * @param {Object} options - Callbacks { onSignIn: (user) => void, onSignOut: () => void }
+ *
+ * Firebase config is NOT hardcoded here. It is fetched from /v1/config/firebase,
+ * which is served by the Cloud Run backend and reads from server-side env vars:
+ *   VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN,
+ *   VITE_FIREBASE_PROJECT_ID, VITE_FIREBASE_APP_ID
+ */
 async function initFirebaseAuth(options = {}) {
   if (options.onSignIn) authStateCallbacks.push({ type: 'in', fn: options.onSignIn });
   if (options.onSignOut) authStateCallbacks.push({ type: 'out', fn: options.onSignOut });
@@ -43,20 +37,13 @@ async function initFirebaseAuth(options = {}) {
 
   try {
     if (!firebase.apps.length) {
-      // Start with the hardcoded config so auth works immediately.
-      // Then try to fetch server-side overrides (e.g. different project in staging).
-      let cfg = { ..._SHACKLE_FIREBASE_CONFIG };
-      try {
-        const cfgRes = await fetch('/v1/config/firebase');
-        if (cfgRes.ok) {
-          const serverCfg = await cfgRes.json();
-          // Only override if the server returns a non-empty apiKey
-          if (serverCfg.apiKey) {
-            cfg = { ...cfg, ...serverCfg };
-          }
-        }
-      } catch (fetchErr) {
-        console.warn('[ShackleAuth] /v1/config/firebase unreachable, using bundled config:', fetchErr);
+      const cfgRes = await fetch('/v1/config/firebase');
+      if (!cfgRes.ok) {
+        throw new Error('Config endpoint returned HTTP ' + cfgRes.status);
+      }
+      const cfg = await cfgRes.json();
+      if (!cfg.apiKey) {
+        throw new Error('Firebase env vars not set on backend (VITE_FIREBASE_API_KEY missing).');
       }
       firebase.initializeApp(cfg);
     }
